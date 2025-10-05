@@ -6,21 +6,28 @@ import (
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 )
 
-type MemStorage struct {
+type MemStorage interface {
+	UpdateGauge(id string, newGauge float64)
+	GetGauge(id string) (float64, error)
+	GetCounter(id string) (int64, error)
+	AddCounter(id string, newConter int64)
+}
+
+type memStorage struct {
 	gauge   map[string]models.Metrics
 	counter map[string]models.Metrics
 }
 
 // NewEmptyMemStorage создает пустое
-func NewEmptyMemStorage() *MemStorage {
-	return &MemStorage{
+func NewEmptyMemStorage() *memStorage {
+	return &memStorage{
 		gauge:   make(map[string]models.Metrics),
 		counter: make(map[string]models.Metrics),
 	}
 }
 
 // UpdateGauge замещает значение метрики типа Gauge значением newGauge
-func (ms *MemStorage) UpdateGauge(id string, newGauge float64) {
+func (ms *memStorage) UpdateGauge(id string, newGauge float64) {
 	metrics := models.Metrics{
 		ID:    id,
 		MType: models.Gauge,
@@ -30,7 +37,7 @@ func (ms *MemStorage) UpdateGauge(id string, newGauge float64) {
 }
 
 // GetGauge возвращает значение метрики gauge для id
-func (ms *MemStorage) GetGauge(id string) (float64, error) {
+func (ms *memStorage) GetGauge(id string) (float64, error) {
 	if metric, exists := ms.gauge[id]; exists {
 		return *metric.Value, nil
 	}
@@ -38,7 +45,7 @@ func (ms *MemStorage) GetGauge(id string) (float64, error) {
 }
 
 // GetCounter возвращает значение метрики counter для id
-func (ms *MemStorage) GetCounter(id string) (int64, error) {
+func (ms *memStorage) GetCounter(id string) (int64, error) {
 	if metric, exists := ms.counter[id]; exists {
 		return int64(*metric.Value), nil
 	}
@@ -46,7 +53,7 @@ func (ms *MemStorage) GetCounter(id string) (int64, error) {
 }
 
 // AddCounter добавляет к предыдущему значению newCounter
-func (ms *MemStorage) AddCounter(id string, newConter int64) {
+func (ms *memStorage) AddCounter(id string, newConter int64) {
 
 	value := float64(newConter)
 	newMetric := models.Metrics{

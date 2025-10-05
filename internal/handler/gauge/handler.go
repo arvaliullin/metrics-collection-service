@@ -24,7 +24,7 @@ func (h *GaugeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusNotFound)
 		return
 	}
-	gauge, err := strconv.ParseFloat(valueStr, 0)
+	gauge, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
 		http.Error(w, "Некорретное значение метрики", http.StatusBadRequest)
 	}

@@ -41,7 +41,7 @@ func (ms *memStorage) GetGauge(id string) (float64, error) {
 	if metric, exists := ms.gauge[id]; exists {
 		return *metric.Value, nil
 	}
-	return 0, fmt.Errorf("Для %s не задано значение Gauage", id)
+	return 0, fmt.Errorf("для %s не задано значение Gauage", id)
 }
 
 // GetCounter возвращает значение метрики counter для id
@@ -49,7 +49,7 @@ func (ms *memStorage) GetCounter(id string) (int64, error) {
 	if metric, exists := ms.counter[id]; exists {
 		return int64(*metric.Value), nil
 	}
-	return 0, fmt.Errorf("Для %s не задано значение Counter", id)
+	return 0, fmt.Errorf("для %s не задано значение Counter", id)
 }
 
 // AddCounter добавляет к предыдущему значению newCounter

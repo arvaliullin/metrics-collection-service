@@ -1,8 +1,8 @@
 package counter
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
@@ -18,10 +18,19 @@ func NewCounterHandler(memStorage repository.MemStorage) *CounterHandler {
 }
 
 func (h *CounterHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	idMetric := r.PathValue("id")
-	valueMetric := r.PathValue("value")
+	valueStr := r.PathValue("value")
+	if idMetric == "" {
+		http.Error(w, "", http.StatusNotFound)
+		return
+	}
+	counter, err := strconv.ParseInt(valueStr, 10, 0)
+	if err != nil {
+		http.Error(w, "Некорретное значение метрики", http.StatusBadRequest)
+	}
 
-	w.Write(fmt.Appendf(nil, "idMetric = %s ", idMetric))
-	w.Write(fmt.Appendf(nil, "valueMetric = %s ", valueMetric))
+	h.memStorage.AddCounter(idMetric, counter)
+
+	w.Header().Set("content-type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }

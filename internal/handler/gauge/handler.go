@@ -1,8 +1,8 @@
 package gauge
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
@@ -19,8 +19,18 @@ func NewGaugeHandler(memStorage repository.MemStorage) *GaugeHandler {
 
 func (h *GaugeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	idMetric := r.PathValue("id")
-	valueMetric := r.PathValue("value")
+	valueStr := r.PathValue("value")
+	if idMetric == "" {
+		http.Error(w, "", http.StatusNotFound)
+		return
+	}
+	gauge, err := strconv.ParseFloat(valueStr, 0)
+	if err != nil {
+		http.Error(w, "Некорретное значение метрики", http.StatusBadRequest)
+	}
 
-	w.Write(fmt.Appendf(nil, "idMetric = %s ", idMetric))
-	w.Write(fmt.Appendf(nil, "valueMetric = %s ", valueMetric))
+	h.memStorage.UpdateGauge(idMetric, gauge)
+
+	w.Header().Set("content-type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }

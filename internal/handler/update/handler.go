@@ -8,6 +8,13 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
 
+const (
+	ErrMethodNotSupportred = "Метод не поддерживается"
+	ErrNotFound            = "Метрика с указанным именем не найдена"
+	ErrInvalidMetricValue  = "Некорретное значение метрики"
+	ErrInvalidMetricType   = "Некорректный тип метрики"
+)
+
 type UpdateHandler struct {
 	memStorage repository.MemStorage
 }
@@ -21,7 +28,7 @@ func NewUpdateHandler(memStorage repository.MemStorage) *UpdateHandler {
 func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		http.Error(w, ErrMethodNotSupportred, http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -30,7 +37,7 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	valueStr := r.PathValue("value")
 
 	if idMetric == "" {
-		http.Error(w, "", http.StatusNotFound)
+		http.Error(w, ErrNotFound, http.StatusNotFound)
 		return
 	}
 
@@ -38,7 +45,7 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case models.Gauge:
 		gauge, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			http.Error(w, "Некорретное значение метрики", http.StatusBadRequest)
+			http.Error(w, ErrInvalidMetricValue, http.StatusBadRequest)
 			return
 		}
 		h.memStorage.UpdateGauge(idMetric, gauge)
@@ -46,13 +53,13 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case models.Counter:
 		counter, err := strconv.ParseInt(valueStr, 10, 64)
 		if err != nil {
-			http.Error(w, "Некорретное значение метрики", http.StatusBadRequest)
+			http.Error(w, ErrInvalidMetricValue, http.StatusBadRequest)
 			return
 		}
 		h.memStorage.AddCounter(idMetric, counter)
 
 	default:
-		http.Error(w, "Некорректный тип метрики", http.StatusBadRequest)
+		http.Error(w, ErrInvalidMetricType, http.StatusBadRequest)
 		return
 	}
 

@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
@@ -13,8 +15,13 @@ import (
 
 func main() {
 
-	endpoint := flag.String("a", "localhost:8080", "http server enpoint")
+	endpoint := flag.String("a", "localhost:8080", "http server endpoint")
 	flag.Parse()
+
+	if args := flag.Args(); len(args) > 0 {
+		fmt.Fprintf(os.Stderr, "неизвестные аргументы: %v\n", args)
+		os.Exit(2)
+	}
 
 	storage := repository.NewEmptyMemStorage()
 	updateHandler := update.NewUpdateHandler(storage)

@@ -15,12 +15,12 @@ type Agent struct {
 	baseURL        string
 }
 
-func New() *Agent {
+func New(baseURL string, pollIntervalSec, reportIntervalSec int) *Agent {
 	return &Agent{
 		client:         &http.Client{},
 		metricsStorage: repository.NewEmptyMemStorage(),
-		pollInterval:   2 * time.Second,
-		reportInterval: 10 * time.Second,
-		baseURL:        `http://localhost:8080`,
+		pollInterval:   time.Duration(pollIntervalSec) * time.Second,
+		reportInterval: time.Duration(reportIntervalSec) * time.Second,
+		baseURL:        baseURL,
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"net/http"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
@@ -12,6 +13,9 @@ import (
 
 func main() {
 
+	endpoint := flag.String("a", "localhost:8080", "http server enpoint")
+	flag.Parse()
+
 	storage := repository.NewEmptyMemStorage()
 	updateHandler := update.NewUpdateHandler(storage)
 	getHandler := get.NewGetHandler(storage)
@@ -21,7 +25,7 @@ func main() {
 	router.Handle(`POST /update/{type}/{id}/{value}`, updateHandler)
 	router.Handle(`GET /value/{type}/{id}`, getHandler)
 	router.Handle(`GET /`, htmlHandler)
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	if err := http.ListenAndServe(*endpoint, router); err != nil {
 		panic(err)
 	}
 }

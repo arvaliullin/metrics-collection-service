@@ -25,3 +25,20 @@ curl-err:
 .PHONY: curl-get
 curl-get:
 	- curl  -X GET http://localhost:8080/value/counter/PollCount
+
+
+.PHONY: up
+up:
+	- docker-compose up --build -d
+
+.PHONY: down
+down:
+	- docker-compose down -v
+
+.PHONY: prune
+prune:
+	- docker image prune -f
+	- docker container prune -f
+	- docker volume prune -f
+	- docker network prune -f
+	- docker system prune -a --volumes -f

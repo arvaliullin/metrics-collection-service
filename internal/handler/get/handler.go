@@ -3,6 +3,7 @@ package get
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
@@ -22,7 +23,6 @@ func NewGetHandler(memStorage repository.MemStorage) *GetHandler {
 }
 
 func (h *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	typeMetric := r.PathValue("type")
 	idMetric := r.PathValue("id")
 
@@ -31,22 +31,29 @@ func (h *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var result []byte
 	switch typeMetric {
 	case models.Gauge:
-		value, _ := h.memStorage.GetGauge(idMetric)
-		result = fmt.Appendf(result, "%f", value)
+		value, err := h.memStorage.GetGauge(idMetric)
+		if err != nil {
+			http.Error(w, ErrNotFound, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(strconv.FormatFloat(value, 'f', -1, 64)))
 
 	case models.Counter:
-		value, _ := h.memStorage.GetCounter(idMetric)
-		result = fmt.Appendf(result, "%d", value)
+		value, err := h.memStorage.GetCounter(idMetric)
+		if err != nil {
+			http.Error(w, ErrNotFound, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "%d", value)
 
 	default:
 		http.Error(w, ErrInvalidMetricType, http.StatusBadRequest)
 		return
 	}
-
-	w.Write(result)
-	w.Header().Set("content-type", "text/plain")
-	w.WriteHeader(http.StatusOK)
 }

@@ -1,11 +1,21 @@
 package agent
 
-import (
-	"fmt"
-	"time"
-)
+import "sync"
 
-func (a *Agent) Run() error {
-	a.cron.Do(func() { fmt.Println(time.Now()) })
-	return nil
+func (a *Agent) Run() {
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		a.Poll()
+	}()
+
+	go func() {
+		defer wg.Done()
+		a.Report()
+	}()
+
+	wg.Wait()
 }

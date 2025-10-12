@@ -11,6 +11,8 @@ type MemStorage interface {
 	GetGauge(id string) (float64, error)
 	GetCounter(id string) (int64, error)
 	AddCounter(id string, newConter int64)
+	AllCounters() []models.Metrics
+	AllGauges() []models.Metrics
 }
 
 type memStorage struct {
@@ -70,4 +72,24 @@ func (ms *memStorage) AddCounter(id string, newConter int64) {
 	}
 
 	ms.counter[id] = newMetric
+}
+
+func (ms *memStorage) AllCounters() []models.Metrics {
+	metrics := make([]models.Metrics, 0, len(ms.counter))
+
+	for _, value := range ms.counter {
+		metrics = append(metrics, value)
+	}
+
+	return metrics
+}
+
+func (ms *memStorage) AllGauges() []models.Metrics {
+	metrics := make([]models.Metrics, 0, len(ms.gauge))
+
+	for _, value := range ms.gauge {
+		metrics = append(metrics, value)
+	}
+
+	return metrics
 }

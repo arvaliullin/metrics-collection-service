@@ -1,17 +1,26 @@
 package agent
 
 import (
+	"net/http"
 	"time"
 
-	"github.com/arvaliullin/metrics-collection-service/internal/service/cron"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
 
 type Agent struct {
-	cron *cron.Cron
+	client         *http.Client
+	metricsStorage repository.MemStorage
+	pollInterval   time.Duration
+	reportInterval time.Duration
+	baseUrl        string
 }
 
 func New() *Agent {
 	return &Agent{
-		cron: cron.New(time.Second * 2),
+		client:         &http.Client{},
+		metricsStorage: repository.NewEmptyMemStorage(),
+		pollInterval:   2 * time.Second,
+		reportInterval: 10 * time.Second,
+		baseUrl:        `http://localhost:8080`,
 	}
 }

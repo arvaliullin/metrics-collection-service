@@ -12,7 +12,7 @@ type Agent struct {
 	metricsStorage repository.MemStorage
 	pollInterval   time.Duration
 	reportInterval time.Duration
-	baseUrl        string
+	baseURL        string
 }
 
 func New() *Agent {
@@ -21,6 +21,6 @@ func New() *Agent {
 		metricsStorage: repository.NewEmptyMemStorage(),
 		pollInterval:   2 * time.Second,
 		reportInterval: 10 * time.Second,
-		baseUrl:        `http://localhost:8080`,
+		baseURL:        `http://localhost:8080`,
 	}
 }

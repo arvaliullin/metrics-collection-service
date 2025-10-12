@@ -16,8 +16,12 @@ agent:
 
 .PHONY: curl
 curl:
-	- curl -v -X POST http://localhost:8080/update/counter/someMetric/527
+	- curl -v -X POST http://localhost:8080/update/gauge/Alloc/1435720.000000
 
 .PHONY: curl-err
 curl-err:
 	- curl  -X POST http://localhost:8080/update/undef/someMetric/527
+
+.PHONY: curl-get
+curl-get:
+	- curl  -X GET http://localhost:8080/value/counter/PollCount

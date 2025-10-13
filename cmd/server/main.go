@@ -33,6 +33,6 @@ func main() {
 	router.Handle(`GET /value/{type}/{id}`, getHandler)
 	router.Handle(`GET /`, htmlHandler)
 	if err := http.ListenAndServe(*endpoint, router); err != nil {
-		panic(err)
+		os.Exit(2)
 	}
 }

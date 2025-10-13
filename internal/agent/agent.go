@@ -1,26 +1,26 @@
 package agent
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/go-resty/resty/v2"
 )
 
 type Agent struct {
-	client         *http.Client
+	client         *resty.Client
 	metricsStorage repository.MemStorage
 	pollInterval   time.Duration
 	reportInterval time.Duration
-	baseURL        string
+	port           string
 }
 
-func New(baseURL string, pollIntervalSec, reportIntervalSec int) *Agent {
+func New(port string, pollIntervalSec, reportIntervalSec int) *Agent {
 	return &Agent{
-		client:         &http.Client{},
+		client:         resty.New(),
 		metricsStorage: repository.NewEmptyMemStorage(),
 		pollInterval:   time.Duration(pollIntervalSec) * time.Second,
 		reportInterval: time.Duration(reportIntervalSec) * time.Second,
-		baseURL:        baseURL,
+		port:           port,
 	}
 }

@@ -21,8 +21,8 @@ func NewHTMLHandler(memStorage repository.MemStorage) *HTMLHandler {
 
 // ServeHTTP возвращает HTML-страницу с таблицами Gauge и Counter.
 func (h *HTMLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	gauges := h.memStorage.AllGauges()
-	counters := h.memStorage.AllCounters()
+	gauges := h.memStorage.AllGauges(r.Context())
+	counters := h.memStorage.AllCounters(r.Context())
 
 	var b strings.Builder
 	writeDocStart(&b)

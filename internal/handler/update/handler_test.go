@@ -42,7 +42,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			target: "/update/counter/someMetric/527",
 			want: want{
 				code:        http.StatusMethodNotAllowed,
-				body:        update.ErrMethodNotSupportred,
+				body:        update.ErrMethodNotSupported.Error(),
 				contentType: "text/plain",
 			},
 		},
@@ -62,7 +62,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			target: "/update/counter/someMetric/asdsdasd",
 			want: want{
 				code:        http.StatusBadRequest,
-				body:        update.ErrInvalidMetricValue,
+				body:        update.ErrInvalidMetricValue.Error(),
 				contentType: "text/plain",
 			},
 		},
@@ -72,7 +72,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			target: "/update/gauge/someMetric/asdsdasd",
 			want: want{
 				code:        http.StatusBadRequest,
-				body:        update.ErrInvalidMetricValue,
+				body:        update.ErrInvalidMetricValue.Error(),
 				contentType: "text/plain",
 			},
 		}, {
@@ -81,7 +81,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			target: "/update/undefined/someMetric/asdsdasd",
 			want: want{
 				code:        http.StatusBadRequest,
-				body:        update.ErrInvalidMetricType,
+				body:        update.ErrInvalidMetricType.Error(),
 				contentType: "text/plain",
 			},
 		},

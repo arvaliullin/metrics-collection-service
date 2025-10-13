@@ -1,6 +1,7 @@
 package update
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -8,11 +9,11 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
 
-const (
-	ErrMethodNotSupportred = "Метод не поддерживается"
-	ErrNotFound            = "Метрика с указанным именем не найдена"
-	ErrInvalidMetricValue  = "Некорретное значение метрики"
-	ErrInvalidMetricType   = "Некорректный тип метрики"
+var (
+	ErrMethodNotSupported = fmt.Errorf("метод не поддерживается")
+	ErrNotFound           = fmt.Errorf("метрика с указанным именем не найдена")
+	ErrInvalidMetricValue = fmt.Errorf("некорретное значение метрики")
+	ErrInvalidMetricType  = fmt.Errorf("некорректный тип метрики")
 )
 
 type UpdateHandler struct {
@@ -28,7 +29,7 @@ func NewUpdateHandler(memStorage repository.MemStorage) *UpdateHandler {
 func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
-		http.Error(w, ErrMethodNotSupportred, http.StatusMethodNotAllowed)
+		http.Error(w, ErrMethodNotSupported.Error(), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -37,7 +38,7 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	valueStr := r.PathValue("value")
 
 	if idMetric == "" {
-		http.Error(w, ErrNotFound, http.StatusNotFound)
+		http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -45,21 +46,21 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case models.Gauge:
 		gauge, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			http.Error(w, ErrInvalidMetricValue, http.StatusBadRequest)
+			http.Error(w, ErrInvalidMetricValue.Error(), http.StatusBadRequest)
 			return
 		}
-		h.memStorage.UpdateGauge(idMetric, gauge)
+		h.memStorage.UpdateGauge(r.Context(), idMetric, gauge)
 
 	case models.Counter:
 		counter, err := strconv.ParseInt(valueStr, 10, 64)
 		if err != nil {
-			http.Error(w, ErrInvalidMetricValue, http.StatusBadRequest)
+			http.Error(w, ErrInvalidMetricValue.Error(), http.StatusBadRequest)
 			return
 		}
-		h.memStorage.AddCounter(idMetric, counter)
+		h.memStorage.AddCounter(r.Context(), idMetric, counter)
 
 	default:
-		http.Error(w, ErrInvalidMetricType, http.StatusBadRequest)
+		http.Error(w, ErrInvalidMetricType.Error(), http.StatusBadRequest)
 		return
 	}
 

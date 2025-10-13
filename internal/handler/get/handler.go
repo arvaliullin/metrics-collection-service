@@ -9,9 +9,9 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
 
-const (
-	ErrNotFound          = "Метрика с указанным именем не найдена"
-	ErrInvalidMetricType = "Некорректный тип метрики"
+var (
+	ErrNotFound          = fmt.Errorf("метрика с указанным именем не найдена")
+	ErrInvalidMetricType = fmt.Errorf("некорректный тип метрики")
 )
 
 type GetHandler struct {
@@ -27,15 +27,15 @@ func (h *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	idMetric := r.PathValue("id")
 
 	if idMetric == "" {
-		http.Error(w, ErrNotFound, http.StatusNotFound)
+		http.Error(w, ErrNotFound.Error(), http.StatusBadRequest)
 		return
 	}
 
 	switch typeMetric {
 	case models.Gauge:
-		value, err := h.memStorage.GetGauge(idMetric)
+		value, err := h.memStorage.GetGauge(r.Context(), idMetric)
 		if err != nil {
-			http.Error(w, ErrNotFound, http.StatusNotFound)
+			http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain")
@@ -43,9 +43,9 @@ func (h *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(strconv.FormatFloat(value, 'f', -1, 64)))
 
 	case models.Counter:
-		value, err := h.memStorage.GetCounter(idMetric)
+		value, err := h.memStorage.GetCounter(r.Context(), idMetric)
 		if err != nil {
-			http.Error(w, ErrNotFound, http.StatusNotFound)
+			http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain")
@@ -53,7 +53,7 @@ func (h *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%d", value)
 
 	default:
-		http.Error(w, ErrInvalidMetricType, http.StatusBadRequest)
+		http.Error(w, ErrInvalidMetricType.Error(), http.StatusBadRequest)
 		return
 	}
 }

@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
@@ -23,9 +24,10 @@ func TestMemStorage_UpdateGauge(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			ms := repository.NewEmptyMemStorage()
-			ms.UpdateGauge(tt.id, tt.newGauge)
-			if gauge, err := ms.GetGauge(tt.id); gauge != tt.expectedGauge || err != nil {
+			ms.UpdateGauge(ctx, tt.id, tt.newGauge)
+			if gauge, err := ms.GetGauge(ctx, tt.id); gauge != tt.expectedGauge || err != nil {
 				t.Fatalf("В тесте %s gauge != tt.expectedGauge || err != nil, err :%s", tt.name, err)
 			}
 		})
@@ -49,9 +51,10 @@ func TestMemStorage_AddCounterEmpty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			ms := repository.NewEmptyMemStorage()
-			ms.AddCounter(tt.id, tt.newConter)
-			if counter, err := ms.GetCounter(tt.id); counter != tt.expectedCounter || err != nil {
+			ms.AddCounter(ctx, tt.id, tt.newConter)
+			if counter, err := ms.GetCounter(ctx, tt.id); counter != tt.expectedCounter || err != nil {
 				t.Fatalf("В тесте %s counter != float64(tt.expectedCounter) || err != nil, err :%s", tt.name, err)
 			}
 		})
@@ -81,10 +84,11 @@ func TestMemStorage_AddCounterExistValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			ms := repository.NewEmptyMemStorage()
-			ms.AddCounter(tt.id, 3)
-			ms.AddCounter(tt.id, tt.newConter)
-			if counter, err := ms.GetCounter(tt.id); counter != tt.expectedCounter || err != nil {
+			ms.AddCounter(ctx, tt.id, 3)
+			ms.AddCounter(ctx, tt.id, tt.newConter)
+			if counter, err := ms.GetCounter(ctx, tt.id); counter != tt.expectedCounter || err != nil {
 				t.Fatalf("В тесте %s counter != float64(tt.expectedCounter) || err != nil, err :%s", tt.name, err)
 			}
 		})
@@ -113,13 +117,14 @@ func TestMemStorage_GetGauge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			ms := repository.NewEmptyMemStorage()
 
 			if !tt.wantErr {
-				ms.UpdateGauge(tt.id, tt.want)
+				ms.UpdateGauge(ctx, tt.id, tt.want)
 			}
 
-			got, gotErr := ms.GetGauge(tt.id)
+			got, gotErr := ms.GetGauge(ctx, tt.id)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("GetGauge() failed: %v", gotErr)
@@ -158,13 +163,14 @@ func TestMemStorage_GetCounter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			ms := repository.NewEmptyMemStorage()
 
 			if !tt.wantErr {
-				ms.AddCounter(tt.id, tt.want)
+				ms.AddCounter(ctx, tt.id, tt.want)
 			}
 
-			got, gotErr := ms.GetCounter(tt.id)
+			got, gotErr := ms.GetCounter(ctx, tt.id)
 
 			if gotErr != nil {
 				if !tt.wantErr {

@@ -46,7 +46,7 @@ func (a *Agent) collectMetrics() {
 
 func (a *Agent) Poll() {
 	for {
-		time.Sleep(a.pollInterval)
+		time.Sleep(a.cfg.pollInterval)
 		a.collectMetrics()
 	}
 }

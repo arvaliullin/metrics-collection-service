@@ -10,7 +10,7 @@ import (
 func (a *Agent) sendCounters() {
 	ctx := context.Background()
 	for _, value := range a.metricsStorage.AllCounters(ctx) {
-		path := fmt.Sprintf("%s/update/counter/%s/%d", a.port, value.ID, int64(*value.Value))
+		path := fmt.Sprintf("%s/update/counter/%s/%d", a.cfg.address, value.ID, int64(*value.Value))
 		_, err := a.client.R().
 			SetHeader("Content-Type", "text/plain").
 			Post(path)
@@ -23,7 +23,7 @@ func (a *Agent) sendCounters() {
 func (a *Agent) sendGauges() {
 	ctx := context.Background()
 	for _, value := range a.metricsStorage.AllGauges(ctx) {
-		path := fmt.Sprintf("%s/update/gauge/%s/%f", a.port, value.ID, *value.Value)
+		path := fmt.Sprintf("%s/update/gauge/%s/%f", a.cfg.address, value.ID, *value.Value)
 		_, err := a.client.R().
 			SetHeader("Content-Type", "text/plain").
 			Post(path)
@@ -35,7 +35,7 @@ func (a *Agent) sendGauges() {
 
 func (a *Agent) Report() {
 	for {
-		time.Sleep(a.reportInterval)
+		time.Sleep(a.cfg.reportInterval)
 		a.sendCounters()
 		a.sendGauges()
 	}

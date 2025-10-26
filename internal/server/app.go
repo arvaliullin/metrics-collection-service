@@ -35,13 +35,30 @@ type ServerApp struct {
 // New создает новый экземпляр ServerApp с инициализированными зависимостями
 func New(ctx context.Context) *ServerApp {
 	cfg := config.LoadConfig()
-	storage := repository.NewEmptyMemStorage()
 
 	logger := zerolog.New(os.Stdout).
 		With().
 		Timestamp().
 		Logger().
 		Level(zerolog.InfoLevel)
+
+	storage, err := repository.NewFileStorage(
+		ctx,
+		repository.FileStorageConfig{
+			FilePath:             cfg.FileStoragePath,
+			StoreIntervalSeconds: cfg.StoreInterval,
+			Restore:              cfg.Restore,
+		},
+		logger,
+	)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to create file storage")
+	}
+	logger.Info().
+		Str("file", cfg.FileStoragePath).
+		Int("interval", cfg.StoreInterval).
+		Bool("restore", cfg.Restore).
+		Msg("file storage initialized")
 
 	app := &ServerApp{
 		Cfg:     cfg,
@@ -104,5 +121,17 @@ func (a *ServerApp) Run(ctx context.Context) error {
 
 	<-ctx.Done()
 	a.logger.Info().Msg("shutting down server")
+
+	if err := a.server.Shutdown(context.Background()); err != nil {
+		a.logger.Error().Err(err).Msg("error shutting down server")
+	}
+
+	if fileStorage, ok := a.storage.(*repository.FileStorage); ok {
+		if err := fileStorage.Close(); err != nil {
+			a.logger.Error().Err(err).Msg("error closing file storage")
+			return err
+		}
+	}
+
 	return nil
 }

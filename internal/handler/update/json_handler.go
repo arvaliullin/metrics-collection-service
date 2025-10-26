@@ -35,6 +35,11 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Body == nil || r.ContentLength == 0 {
+		http.Error(w, ErrInvalidJSON.Error(), http.StatusBadRequest)
+		return
+	}
+
 	var metric models.Metrics
 	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 		http.Error(w, ErrInvalidJSON.Error(), http.StatusBadRequest)
@@ -61,6 +66,10 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var response models.Metrics
+	response.ID = metric.ID
+	response.MType = metric.MType
+
 	switch metric.MType {
 	case models.Gauge:
 		if metric.Value == nil {
@@ -68,6 +77,12 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.memStorage.UpdateGauge(r.Context(), metric.ID, *metric.Value)
+		value, err := h.memStorage.GetGauge(r.Context(), metric.ID)
+		if err != nil {
+			http.Error(w, ErrNotFound.Error(), http.StatusInternalServerError)
+			return
+		}
+		response.Value = &value
 
 	case models.Counter:
 		if metric.Delta == nil {
@@ -75,6 +90,12 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.memStorage.AddCounter(r.Context(), metric.ID, *metric.Delta)
+		delta, err := h.memStorage.GetCounter(r.Context(), metric.ID)
+		if err != nil {
+			http.Error(w, ErrNotFound.Error(), http.StatusInternalServerError)
+			return
+		}
+		response.Delta = &delta
 
 	default:
 		http.Error(w, ErrInvalidMetricType.Error(), http.StatusBadRequest)
@@ -83,4 +104,5 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

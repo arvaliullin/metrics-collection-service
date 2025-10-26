@@ -19,6 +19,7 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 		code        int
 		body        string
 		contentType string
+		metric      *models.Metrics
 	}
 
 	tests := []struct {
@@ -42,6 +43,11 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 			want: want{
 				code:        http.StatusOK,
 				contentType: "application/json",
+				metric: &models.Metrics{
+					ID:    "someMetric",
+					MType: "gauge",
+					Value: func() *float64 { v := 3.14; return &v }(),
+				},
 			},
 		},
 		{
@@ -57,6 +63,11 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 			want: want{
 				code:        http.StatusOK,
 				contentType: "application/json",
+				metric: &models.Metrics{
+					ID:    "counterMetric",
+					MType: "counter",
+					Delta: func() *int64 { v := int64(42); return &v }(),
+				},
 			},
 		},
 		{
@@ -198,6 +209,21 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 			}
 			if tt.want.contentType != "" {
 				assert.Equal(t, tt.want.contentType, w.Header().Get("Content-Type"), "Content-Type не совпадает с ожидаемым")
+			}
+			if tt.want.metric != nil {
+				var response models.Metrics
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				assert.NoError(t, err, "Ошибка декодирования ответа")
+				assert.Equal(t, tt.want.metric.ID, response.ID, "ID метрики не совпадает")
+				assert.Equal(t, tt.want.metric.MType, response.MType, "Тип метрики не совпадает")
+				if tt.want.metric.Value != nil {
+					assert.NotNil(t, response.Value, "Значение Value не должно быть nil")
+					assert.Equal(t, *tt.want.metric.Value, *response.Value, "Значение метрики не совпадает")
+				}
+				if tt.want.metric.Delta != nil {
+					assert.NotNil(t, response.Delta, "Значение Delta не должно быть nil")
+					assert.Equal(t, *tt.want.metric.Delta, *response.Delta, "Значение дельты не совпадает")
+				}
 			}
 		})
 	}

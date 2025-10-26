@@ -30,6 +30,11 @@ func (h *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Body == nil || r.ContentLength == 0 {
+		http.Error(w, ErrInvalidJSON.Error(), http.StatusBadRequest)
+		return
+	}
+
 	var metric models.Metrics
 	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 		http.Error(w, ErrInvalidJSON.Error(), http.StatusBadRequest)

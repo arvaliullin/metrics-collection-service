@@ -1,12 +1,34 @@
 package agent
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 )
+
+func compressBody(data any) (io.Reader, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if _, err := gz.Write(jsonData); err != nil {
+		return nil, err
+	}
+	if err := gz.Close(); err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
 
 func (a *Agent) sendCounters(ctx context.Context) {
 	for _, value := range a.metricsStorage.AllCounters(ctx) {
@@ -23,9 +45,21 @@ func (a *Agent) sendCounters(ctx context.Context) {
 			Delta: &delta,
 		}
 
-		_, err := a.client.R().
+		compressedBody, err := compressBody(metric)
+		if err != nil {
+			a.logger.Error().
+				Err(err).
+				Str("method", "sendCounters").
+				Str("metric", value.ID).
+				Msg("failed to compress counter")
+			continue
+		}
+
+		resp, err := a.client.R().
 			SetHeader("Content-Type", "application/json").
-			SetBody(metric).
+			SetHeader("Content-Encoding", "gzip").
+			SetHeader("Accept-Encoding", "gzip").
+			SetBody(compressedBody).
 			Post(fmt.Sprintf("%s/update", a.cfg.GetAddress()))
 		if err != nil {
 			a.logger.Error().
@@ -33,7 +67,14 @@ func (a *Agent) sendCounters(ctx context.Context) {
 				Str("method", "sendCounters").
 				Str("metric", value.ID).
 				Msg("failed to send counter")
+			continue
 		}
+
+		a.logger.Info().
+			Str("method", "sendCounters").
+			Str("metric", value.ID).
+			Int("status", resp.StatusCode()).
+			Msg("counter sent successfully")
 	}
 }
 
@@ -49,9 +90,21 @@ func (a *Agent) sendGauges(ctx context.Context) {
 			Value: value.Value,
 		}
 
-		_, err := a.client.R().
+		compressedBody, err := compressBody(metric)
+		if err != nil {
+			a.logger.Error().
+				Err(err).
+				Str("method", "sendGauges").
+				Str("metric", value.ID).
+				Msg("failed to compress gauge")
+			continue
+		}
+
+		resp, err := a.client.R().
 			SetHeader("Content-Type", "application/json").
-			SetBody(metric).
+			SetHeader("Content-Encoding", "gzip").
+			SetHeader("Accept-Encoding", "gzip").
+			SetBody(compressedBody).
 			Post(fmt.Sprintf("%s/update", a.cfg.GetAddress()))
 		if err != nil {
 			a.logger.Error().
@@ -59,7 +112,14 @@ func (a *Agent) sendGauges(ctx context.Context) {
 				Str("method", "sendGauges").
 				Str("metric", value.ID).
 				Msg("failed to send gauge")
+			continue
 		}
+
+		a.logger.Info().
+			Str("method", "sendGauges").
+			Str("metric", value.ID).
+			Int("status", resp.StatusCode()).
+			Msg("gauge sent successfully")
 	}
 }
 

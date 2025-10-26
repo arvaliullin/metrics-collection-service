@@ -23,8 +23,10 @@ func New(ctx context.Context) *Agent {
 		Logger().
 		Level(zerolog.InfoLevel)
 
+	client := resty.New()
+
 	return &Agent{
-		client:         resty.New(),
+		client:         client,
 		metricsStorage: repository.NewEmptyMemStorage(),
 		cfg:            loadConfig(),
 		logger:         logger,

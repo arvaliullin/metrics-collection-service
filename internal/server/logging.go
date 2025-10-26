@@ -7,7 +7,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// ResponseWriter является оберткой для http.ResponseWriter для отслеживания кода статуса и размера ответа
 type responseWriter struct {
 	http.ResponseWriter
 	statusCode int
@@ -25,7 +24,6 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return size, err
 }
 
-// LoggingMiddleware создает middleware для логирования запросов и ответов
 func loggingMiddleware(logger zerolog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

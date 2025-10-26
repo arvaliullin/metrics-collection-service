@@ -69,6 +69,8 @@ func (a *ServerApp) Logger() *zerolog.Logger {
 // setupRouter настраивает HTTP маршруты
 func (a *ServerApp) setupRouter() {
 	router := chi.NewRouter()
+	router.Use(GzipDecompressMiddleware())
+	router.Use(GzipCompressMiddleware())
 	router.Use(loggingMiddleware(a.logger))
 
 	router.Handle(`POST /update/{type}/{id}/{value}`, a.handlers.update)

@@ -26,5 +26,3 @@ vendor/
 .vscode
 
 .env
-agent
-server

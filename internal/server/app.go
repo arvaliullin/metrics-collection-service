@@ -16,9 +16,11 @@ import (
 
 // handlers содержит все HTTP обработчики приложения
 type handlers struct {
-	update *update.UpdateHandler
-	get    *get.GetHandler
-	html   *html.HTMLHandler
+	update     *update.UpdateHandler
+	updateJSON *update.UpdateJSONHandler
+	get        *get.GetHandler
+	getJSON    *get.GetJSONHandler
+	html       *html.HTMLHandler
 }
 
 // ServerApp представляет основное серверное приложение со всеми зависимостями
@@ -46,9 +48,11 @@ func New(ctx context.Context) *ServerApp {
 		storage: storage,
 		logger:  logger,
 		handlers: &handlers{
-			update: update.NewUpdateHandler(storage),
-			get:    get.NewGetHandler(storage),
-			html:   html.NewHTMLHandler(storage),
+			update:     update.NewUpdateHandler(storage),
+			updateJSON: update.NewUpdateJSONHandler(storage),
+			get:        get.NewGetHandler(storage),
+			getJSON:    get.NewGetJSONHandler(storage),
+			html:       html.NewHTMLHandler(storage),
 		},
 	}
 
@@ -69,6 +73,12 @@ func (a *ServerApp) setupRouter() {
 
 	router.Handle(`POST /update/{type}/{id}/{value}`, a.handlers.update)
 	router.Handle(`GET /value/{type}/{id}`, a.handlers.get)
+
+	router.Handle(`POST /update`, a.handlers.updateJSON)
+	router.Handle(`POST /update/`, a.handlers.updateJSON)
+	router.Handle(`POST /value`, a.handlers.getJSON)
+	router.Handle(`POST /value/`, a.handlers.getJSON)
+
 	router.Handle(`GET /`, a.handlers.html)
 
 	a.server = &http.Server{

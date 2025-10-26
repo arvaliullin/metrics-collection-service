@@ -61,7 +61,12 @@ func (ms *memStorage) GetCounter(ctx context.Context, id string) (int64, error) 
 	defer ms.mu.RUnlock()
 
 	if metric, exists := ms.counter[id]; exists {
-		return int64(*metric.Value), nil
+		if metric.Delta != nil {
+			return *metric.Delta, nil
+		}
+		if metric.Value != nil {
+			return int64(*metric.Value), nil
+		}
 	}
 	return 0, fmt.Errorf("для %s не задано значение Counter", id)
 }
@@ -71,18 +76,22 @@ func (ms *memStorage) AddCounter(ctx context.Context, id string, newConter int64
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	value := float64(newConter)
+	delta := newConter
+
+	if metric, exists := ms.counter[id]; exists {
+		var currentDelta int64
+		if metric.Delta != nil {
+			currentDelta = *metric.Delta
+		} else if metric.Value != nil {
+			currentDelta = int64(*metric.Value)
+		}
+		delta = currentDelta + newConter
+	}
+
 	newMetric := models.Metrics{
 		ID:    id,
 		MType: models.Counter,
-		Value: &value,
-	}
-
-	if metric, exists := ms.counter[id]; exists {
-		value += *metric.Value
-		newMetric = metric
-		newMetric.Value = &value
-		ms.counter[id] = newMetric
+		Delta: &delta,
 	}
 
 	ms.counter[id] = newMetric

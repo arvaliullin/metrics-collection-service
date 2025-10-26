@@ -6,7 +6,7 @@ build:
 
 .PHONY: run
 run:
-	- ADDRESS=localhost:8082 go run github.com/arvaliullin/metrics-collection-service/cmd/server
+	- go run github.com/arvaliullin/metrics-collection-service/cmd/server
 
 .PHONY: test
 test:

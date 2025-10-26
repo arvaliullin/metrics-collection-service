@@ -7,8 +7,7 @@ import (
 	"time"
 )
 
-func (a *Agent) collectMetrics() {
-	ctx := context.Background()
+func (a *Agent) collectMetrics(ctx context.Context) {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 
@@ -44,9 +43,13 @@ func (a *Agent) collectMetrics() {
 	a.metricsStorage.UpdateGauge(ctx, "RandomValue", rand.Float64())
 }
 
-func (a *Agent) Poll() {
+func (a *Agent) Poll(ctx context.Context) {
 	for {
-		time.Sleep(a.cfg.GetPollInterval())
-		a.collectMetrics()
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(a.cfg.GetPollInterval()):
+			a.collectMetrics(ctx)
+		}
 	}
 }

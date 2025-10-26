@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -14,14 +14,6 @@ type Config struct {
 	pollInterval   time.Duration `envconfig:"POLL_INTERVAL"`
 	reportInterval time.Duration `envconfig:"REPORT_INTERVAL"`
 	address        string        `envconfig:"ADDRESS"`
-}
-
-func normalizeBaseURL(u *string) {
-	if strings.HasPrefix(*u, "http://") || strings.HasPrefix(*u, "https://") {
-		return
-	}
-
-	*u = "http://" + *u
 }
 
 func loadConfig() *Config {
@@ -44,7 +36,7 @@ func loadConfig() *Config {
 		os.Exit(2)
 	}
 
-	normalizeBaseURL(&cfg.address)
+	utils.NormalizeBaseURL(&cfg.address)
 
 	return &cfg
 }

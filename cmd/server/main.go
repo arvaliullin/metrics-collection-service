@@ -1,11 +1,10 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"net/http"
 	"os"
 
+	"github.com/arvaliullin/metrics-collection-service/internal/config"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
@@ -15,14 +14,7 @@ import (
 
 func main() {
 
-	endpoint := flag.String("a", "localhost:8080", "http server endpoint")
-	flag.Parse()
-
-	if args := flag.Args(); len(args) > 0 {
-		fmt.Fprintf(os.Stderr, "неизвестные аргументы: %v\n", args)
-		os.Exit(2)
-	}
-
+	cfg := config.LoadConfig()
 	storage := repository.NewEmptyMemStorage()
 	updateHandler := update.NewUpdateHandler(storage)
 	getHandler := get.NewGetHandler(storage)
@@ -32,7 +24,7 @@ func main() {
 	router.Handle(`POST /update/{type}/{id}/{value}`, updateHandler)
 	router.Handle(`GET /value/{type}/{id}`, getHandler)
 	router.Handle(`GET /`, htmlHandler)
-	if err := http.ListenAndServe(*endpoint, router); err != nil {
+	if err := http.ListenAndServe(cfg.Address, router); err != nil {
 		os.Exit(2)
 	}
 }

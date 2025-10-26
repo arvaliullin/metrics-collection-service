@@ -1,6 +1,6 @@
 .PHONY: run
 run:
-	- go run github.com/arvaliullin/metrics-collection-service/cmd/server
+	- ADDRESS=localhost:8082 go run github.com/arvaliullin/metrics-collection-service/cmd/server
 
 .PHONY: test
 test:

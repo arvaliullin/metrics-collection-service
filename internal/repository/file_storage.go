@@ -89,7 +89,9 @@ func (fs *FileStorage) Close() error {
 
 func (fs *FileStorage) triggerSave(ctx context.Context) {
 	if fs.storeInterval == 0 {
-		go fs.saveToFile(ctx)
+		if err := fs.saveToFile(ctx); err != nil {
+			fs.logger.Error().Err(err).Msg("failed to save to file")
+		}
 		return
 	}
 

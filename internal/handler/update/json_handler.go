@@ -89,7 +89,7 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, ErrMissingCounterDelta.Error(), http.StatusBadRequest)
 			return
 		}
-		h.memStorage.AddCounter(r.Context(), metric.ID, *metric.Delta)
+		h.memStorage.AddCounterValue(r.Context(), metric.ID, *metric.Delta)
 		delta, err := h.memStorage.GetCounter(r.Context(), metric.ID)
 		if err != nil {
 			http.Error(w, ErrNotFound.Error(), http.StatusInternalServerError)

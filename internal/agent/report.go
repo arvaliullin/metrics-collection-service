@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
@@ -75,6 +76,10 @@ func (a *Agent) sendCounters(ctx context.Context) {
 			Str("metric", value.ID).
 			Int("status", resp.StatusCode()).
 			Msg("counter sent successfully")
+
+		if resp.StatusCode() == http.StatusOK {
+			a.metricsStorage.ResetCounter(ctx, value.ID)
+		}
 	}
 }
 

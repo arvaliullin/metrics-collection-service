@@ -13,6 +13,8 @@ type MemStorage interface {
 	GetGauge(ctx context.Context, id string) (float64, error)
 	GetCounter(ctx context.Context, id string) (int64, error)
 	AddCounter(ctx context.Context, id string, newConter int64)
+	AddCounterValue(ctx context.Context, id string, delta int64)
+	ResetCounter(ctx context.Context, id string)
 	AllCounters(ctx context.Context) []models.Metrics
 	AllGauges(ctx context.Context) []models.Metrics
 }
@@ -61,11 +63,10 @@ func (ms *memStorage) GetCounter(ctx context.Context, id string) (int64, error) 
 	defer ms.mu.RUnlock()
 
 	if metric, exists := ms.counter[id]; exists {
-		if metric.Delta != nil {
-			return *metric.Delta, nil
-		}
 		if metric.Value != nil {
 			return int64(*metric.Value), nil
+		} else if metric.Delta != nil {
+			return *metric.Delta, nil
 		}
 	}
 	return 0, fmt.Errorf("для %s не задано значение Counter", id)
@@ -76,22 +77,55 @@ func (ms *memStorage) AddCounter(ctx context.Context, id string, newConter int64
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	delta := newConter
-
+	var currentDelta int64
 	if metric, exists := ms.counter[id]; exists {
-		var currentDelta int64
 		if metric.Delta != nil {
 			currentDelta = *metric.Delta
 		} else if metric.Value != nil {
 			currentDelta = int64(*metric.Value)
 		}
-		delta = currentDelta + newConter
 	}
 
+	newDelta := currentDelta + newConter
 	newMetric := models.Metrics{
 		ID:    id,
 		MType: models.Counter,
-		Delta: &delta,
+		Delta: &newDelta,
+	}
+
+	ms.counter[id] = newMetric
+}
+
+func (ms *memStorage) ResetCounter(ctx context.Context, id string) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	zeroDelta := int64(0)
+	newMetric := models.Metrics{
+		ID:    id,
+		MType: models.Counter,
+		Delta: &zeroDelta,
+	}
+
+	ms.counter[id] = newMetric
+}
+
+func (ms *memStorage) AddCounterValue(ctx context.Context, id string, delta int64) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	var currentValue int64
+	if metric, exists := ms.counter[id]; exists {
+		if metric.Value != nil {
+			currentValue = int64(*metric.Value)
+		}
+	}
+
+	newValue := float64(currentValue + delta)
+	newMetric := models.Metrics{
+		ID:    id,
+		MType: models.Counter,
+		Value: &newValue,
 	}
 
 	ms.counter[id] = newMetric
@@ -104,7 +138,17 @@ func (ms *memStorage) AllCounters(ctx context.Context) []models.Metrics {
 	metrics := make([]models.Metrics, 0, len(ms.counter))
 
 	for _, value := range ms.counter {
-		metrics = append(metrics, value)
+		newMetric := models.Metrics{
+			ID:    value.ID,
+			MType: value.MType,
+		}
+		if value.Delta != nil {
+			newMetric.Delta = value.Delta
+		} else if value.Value != nil {
+			delta := int64(*value.Value)
+			newMetric.Delta = &delta
+		}
+		metrics = append(metrics, newMetric)
 	}
 
 	return metrics

@@ -69,7 +69,12 @@ func (fs *FileStorage) GetCounter(ctx context.Context, id string) (int64, error)
 }
 
 func (fs *FileStorage) AddCounter(ctx context.Context, id string, newCounter int64) {
-	fs.memStorage.AddCounter(ctx, id, newCounter)
+	fs.memStorage.AddCounterValue(ctx, id, newCounter)
+	fs.triggerSave(ctx)
+}
+
+func (fs *FileStorage) AddCounterValue(ctx context.Context, id string, delta int64) {
+	fs.memStorage.AddCounterValue(ctx, id, delta)
 	fs.triggerSave(ctx)
 }
 
@@ -79,6 +84,10 @@ func (fs *FileStorage) AllCounters(ctx context.Context) []models.Metrics {
 
 func (fs *FileStorage) AllGauges(ctx context.Context) []models.Metrics {
 	return fs.memStorage.AllGauges(ctx)
+}
+
+func (fs *FileStorage) ResetCounter(ctx context.Context, id string) {
+	fs.memStorage.ResetCounter(ctx, id)
 }
 
 func (fs *FileStorage) Close() error {
@@ -167,8 +176,12 @@ func (fs *FileStorage) loadFromFile(ctx context.Context) error {
 	for _, m := range metrics {
 		if m.MType == models.Gauge && m.Value != nil {
 			fs.memStorage.UpdateGauge(ctx, m.ID, *m.Value)
-		} else if m.MType == models.Counter && m.Delta != nil {
-			fs.memStorage.AddCounter(ctx, m.ID, *m.Delta)
+		} else if m.MType == models.Counter {
+			if m.Value != nil {
+				fs.memStorage.AddCounterValue(ctx, m.ID, int64(*m.Value))
+			} else if m.Delta != nil {
+				fs.memStorage.AddCounterValue(ctx, m.ID, *m.Delta)
+			}
 		}
 	}
 

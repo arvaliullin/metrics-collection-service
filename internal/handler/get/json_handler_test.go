@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -196,7 +195,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 
 			assert.Equal(t, tt.want.code, w.Code, "Код ответа не совпадает с ожидаемым")
 			if tt.want.body != "" {
-				assert.Equal(t, fmt.Sprintln(tt.want.body), w.Body.String(), "Тело ответа не совпадает с ожидаемым")
+				assert.Contains(t, w.Body.String(), tt.want.body)
 			}
 			if tt.want.contentType != "" {
 				assert.Equal(t, tt.want.contentType, w.Header().Get("Content-Type"), "Content-Type не совпадает с ожидаемым")

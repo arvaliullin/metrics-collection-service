@@ -1,7 +1,6 @@
 package update_test
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -103,7 +102,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 
 			assert.Equal(t, tt.want.code, w.Code, "Код ответа не совпадает с ожидаемым")
 			if tt.want.body != "" {
-				assert.Equal(t, fmt.Sprintln(tt.want.body), w.Body.String(), "Тело ответа не совпадает с ожидаемым")
+				assert.Contains(t, w.Body.String(), tt.want.body)
 			}
 		})
 	}

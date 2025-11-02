@@ -128,7 +128,6 @@ func (a *ServerApp) Run(ctx context.Context) error {
 
 	if fileStorage, ok := a.storage.(*repository.FileStorage); ok {
 		if err := fileStorage.Close(); err != nil {
-			a.logger.Error().Err(err).Msg("error closing file storage")
 			return err
 		}
 	}

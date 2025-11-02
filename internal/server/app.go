@@ -122,7 +122,7 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	<-ctx.Done()
 	a.logger.Info().Msg("shutting down server")
 
-	if err := a.server.Shutdown(context.Background()); err != nil {
+	if err := a.server.Shutdown(context.TODO()); err != nil {
 		a.logger.Error().Err(err).Msg("error shutting down server")
 	}
 

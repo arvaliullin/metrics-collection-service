@@ -93,7 +93,7 @@ func (fs *FileStorage) ResetCounter(ctx context.Context, id string) {
 func (fs *FileStorage) Close() error {
 	close(fs.stopChan)
 	fs.wg.Wait()
-	return fs.saveToFile(context.Background())
+	return fs.saveToFile(context.TODO())
 }
 
 func (fs *FileStorage) triggerSave(ctx context.Context) {

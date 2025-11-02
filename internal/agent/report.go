@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
@@ -58,12 +59,23 @@ func (a *Agent) sendCounters(ctx context.Context) {
 			continue
 		}
 
+		requestURL, err := url.JoinPath(a.cfg.GetAddress(), "/update")
+		if err != nil {
+			a.logger.Error().
+				Err(err).
+				Str("method", "sendCounters").
+				Str("metric", value.ID).
+				Str("address", a.cfg.GetAddress()).
+				Msg("failed to join URL path")
+			continue
+		}
+
 		resp, err := a.client.R().
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader("Accept-Encoding", "gzip").
 			SetBody(compressedBody).
-			Post(fmt.Sprintf("%s/update", a.cfg.GetAddress()))
+			Post(requestURL)
 		if err != nil {
 			a.logger.Error().
 				Err(err).
@@ -107,12 +119,23 @@ func (a *Agent) sendGauges(ctx context.Context) {
 			continue
 		}
 
+		requestURL, err := url.JoinPath(a.cfg.GetAddress(), "/update")
+		if err != nil {
+			a.logger.Error().
+				Err(err).
+				Str("method", "sendGauges").
+				Str("metric", value.ID).
+				Str("address", a.cfg.GetAddress()).
+				Msg("failed to join URL path")
+			continue
+		}
+
 		resp, err := a.client.R().
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader("Accept-Encoding", "gzip").
 			SetBody(compressedMetric).
-			Post(fmt.Sprintf("%s/update", a.cfg.GetAddress()))
+			Post(requestURL)
 		if err != nil {
 			a.logger.Error().
 				Err(err).

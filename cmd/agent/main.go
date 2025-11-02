@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
+	"os/signal"
+	"syscall"
+
 	"github.com/arvaliullin/metrics-collection-service/internal/agent"
-	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 )
 
 func main() {
-	ctx, cancel := utils.CtxWithSyscallHandler()
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	app := agent.New(ctx)

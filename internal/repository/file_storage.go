@@ -25,7 +25,6 @@ type FileStorage struct {
 	storeInterval time.Duration
 	restore       bool
 	logger        zerolog.Logger
-	saveChan      chan struct{}
 	stopChan      chan struct{}
 	wg            sync.WaitGroup
 }
@@ -37,7 +36,6 @@ func NewFileStorage(ctx context.Context, cfg FileStorageConfig, logger zerolog.L
 		storeInterval: time.Duration(cfg.StoreIntervalSeconds) * time.Second,
 		restore:       cfg.Restore,
 		logger:        logger,
-		saveChan:      make(chan struct{}, 1),
 		stopChan:      make(chan struct{}),
 	}
 
@@ -104,10 +102,6 @@ func (fs *FileStorage) triggerSave(ctx context.Context) {
 		return
 	}
 
-	select {
-	case fs.saveChan <- struct{}{}:
-	default:
-	}
 }
 
 func (fs *FileStorage) periodicSave(ctx context.Context) {
@@ -121,10 +115,6 @@ func (fs *FileStorage) periodicSave(ctx context.Context) {
 		case <-ticker.C:
 			if err := fs.saveToFile(ctx); err != nil {
 				fs.logger.Error().Err(err).Msg("periodic save failed")
-			}
-		case <-fs.saveChan:
-			if err := fs.saveToFile(ctx); err != nil {
-				fs.logger.Error().Err(err).Msg("save after update failed")
 			}
 		case <-fs.stopChan:
 			return

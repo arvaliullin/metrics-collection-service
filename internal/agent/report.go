@@ -13,24 +13,26 @@ import (
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 )
 
-func compressBody(data any) (io.Reader, error) {
-	jsonData, err := json.Marshal(data)
+// compressMetric сжимает метрики
+func compressMetric(metric models.Metrics) (io.Reader, error) {
+	jsonData, err := json.Marshal(metric)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ошибка при сериализации метрики в JSON: %w", err)
 	}
 
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
+	defer gz.Close()
+
 	if _, err := gz.Write(jsonData); err != nil {
-		return nil, err
-	}
-	if err := gz.Close(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ошибка при сжатии метрики %w", err)
 	}
 
 	return &buf, nil
 }
 
+// sendCounters передает метрики типа Counter средствами клиента http
 func (a *Agent) sendCounters(ctx context.Context) {
 	for _, value := range a.metricsStorage.AllCounters(ctx) {
 		var delta int64
@@ -46,7 +48,7 @@ func (a *Agent) sendCounters(ctx context.Context) {
 			Delta: &delta,
 		}
 
-		compressedBody, err := compressBody(metric)
+		compressedBody, err := compressMetric(metric)
 		if err != nil {
 			a.logger.Error().
 				Err(err).
@@ -95,7 +97,7 @@ func (a *Agent) sendGauges(ctx context.Context) {
 			Value: value.Value,
 		}
 
-		compressedBody, err := compressBody(metric)
+		compressedMetric, err := compressMetric(metric)
 		if err != nil {
 			a.logger.Error().
 				Err(err).
@@ -109,7 +111,7 @@ func (a *Agent) sendGauges(ctx context.Context) {
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader("Accept-Encoding", "gzip").
-			SetBody(compressedBody).
+			SetBody(compressedMetric).
 			Post(fmt.Sprintf("%s/update", a.cfg.GetAddress()))
 		if err != nil {
 			a.logger.Error().

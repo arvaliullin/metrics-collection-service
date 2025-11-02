@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// collectMetrics собирает метрики и обновляет их в хранилище агента
 func (a *Agent) collectMetrics(ctx context.Context) {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
@@ -43,6 +44,7 @@ func (a *Agent) collectMetrics(ctx context.Context) {
 	a.metricsStorage.UpdateGauge(ctx, "RandomValue", rand.Float64())
 }
 
+// Poll выполняет опрос метрик и обновляет их в хранилище агента с заданной периодичностью
 func (a *Agent) Poll(ctx context.Context) {
 	for {
 		select {

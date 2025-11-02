@@ -79,7 +79,7 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.memStorage.UpdateGauge(r.Context(), metric.ID, *metric.Value)
 		value, err := h.memStorage.GetGauge(r.Context(), metric.ID)
 		if err != nil {
-			http.Error(w, ErrNotFound.Error(), http.StatusInternalServerError)
+			http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
 			return
 		}
 		response.Value = &value
@@ -92,7 +92,7 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.memStorage.AddCounterValue(r.Context(), metric.ID, *metric.Delta)
 		delta, err := h.memStorage.GetCounter(r.Context(), metric.ID)
 		if err != nil {
-			http.Error(w, ErrNotFound.Error(), http.StatusInternalServerError)
+			http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
 			return
 		}
 		response.Delta = &delta

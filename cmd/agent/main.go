@@ -1,37 +1,22 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"os"
-	"strings"
+	"context"
+	"os/signal"
+	"syscall"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/agent"
 )
 
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
-	baseURL := flag.String("a", "localhost:8080", "адрес HTTP-сервера")
-	reportIntervalSec := flag.Int("r", 10, "частота отправки метрик на сервер")
-	pollIntervalSec := flag.Int("p", 2, "частота опроса метрик из пакета")
+	app := agent.New(ctx)
 
-	flag.Parse()
-
-	if args := flag.Args(); len(args) > 0 {
-		fmt.Fprintf(os.Stderr, "неизвестные аргументы: %v\n", args)
-		os.Exit(2)
+	if err := app.Run(ctx); err != nil {
+		app.Logger().Fatal().
+			Err(err).
+			Msg("failed to run metrics agent")
 	}
-
-	normalizeBaseURL(baseURL)
-
-	app := agent.New(*baseURL, *pollIntervalSec, *reportIntervalSec)
-	app.Run()
-}
-
-func normalizeBaseURL(u *string) {
-	if strings.HasPrefix(*u, "http://") || strings.HasPrefix(*u, "https://") {
-		return
-	}
-
-	*u = "http://" + *u
 }

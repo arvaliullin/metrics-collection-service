@@ -1,26 +1,38 @@
 package agent
 
 import (
-	"time"
+	"context"
+	"os"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/go-resty/resty/v2"
+	"github.com/rs/zerolog"
 )
 
 type Agent struct {
 	client         *resty.Client
 	metricsStorage repository.MemStorage
-	pollInterval   time.Duration
-	reportInterval time.Duration
-	port           string
+	cfg            *Config
+	logger         zerolog.Logger
 }
 
-func New(port string, pollIntervalSec, reportIntervalSec int) *Agent {
+func New(ctx context.Context) *Agent {
+	logger := zerolog.New(os.Stdout).
+		With().
+		Timestamp().
+		Logger().
+		Level(zerolog.InfoLevel)
+
+	client := resty.New()
+
 	return &Agent{
-		client:         resty.New(),
+		client:         client,
 		metricsStorage: repository.NewEmptyMemStorage(),
-		pollInterval:   time.Duration(pollIntervalSec) * time.Second,
-		reportInterval: time.Duration(reportIntervalSec) * time.Second,
-		port:           port,
+		cfg:            loadConfig(),
+		logger:         logger,
 	}
+}
+
+func (a *Agent) Logger() *zerolog.Logger {
+	return &a.logger
 }

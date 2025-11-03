@@ -1,3 +1,9 @@
+.PHONY: build
+build:
+	mkdir -p bin
+	go build -o bin/agent github.com/arvaliullin/metrics-collection-service/cmd/agent
+	go build -o bin/server github.com/arvaliullin/metrics-collection-service/cmd/server
+
 .PHONY: run
 run:
 	- go run github.com/arvaliullin/metrics-collection-service/cmd/server
@@ -34,6 +40,10 @@ up:
 .PHONY: down
 down:
 	- docker-compose down -v
+
+.PHONY: clean
+clean:
+	rm -rf bin/
 
 .PHONY: prune
 prune: down

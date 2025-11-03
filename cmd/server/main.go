@@ -1,38 +1,22 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"net/http"
-	"os"
+	"context"
+	"os/signal"
+	"syscall"
 
-	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
-	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
-	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
-	"github.com/go-chi/chi/v5"
+	"github.com/arvaliullin/metrics-collection-service/internal/server"
 )
 
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
-	endpoint := flag.String("a", "localhost:8080", "http server endpoint")
-	flag.Parse()
+	app := server.New(ctx)
 
-	if args := flag.Args(); len(args) > 0 {
-		fmt.Fprintf(os.Stderr, "неизвестные аргументы: %v\n", args)
-		os.Exit(2)
-	}
-
-	storage := repository.NewEmptyMemStorage()
-	updateHandler := update.NewUpdateHandler(storage)
-	getHandler := get.NewGetHandler(storage)
-	htmlHandler := html.NewHTMLHandler(storage)
-
-	router := chi.NewRouter()
-	router.Handle(`POST /update/{type}/{id}/{value}`, updateHandler)
-	router.Handle(`GET /value/{type}/{id}`, getHandler)
-	router.Handle(`GET /`, htmlHandler)
-	if err := http.ListenAndServe(*endpoint, router); err != nil {
-		os.Exit(2)
+	if err := app.Run(ctx); err != nil {
+		app.Logger().Fatal().
+			Err(err).
+			Msg("failed to run metrics collection service")
 	}
 }

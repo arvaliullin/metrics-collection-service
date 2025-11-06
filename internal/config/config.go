@@ -9,10 +9,11 @@ import (
 )
 
 type ServerConfig struct {
-	Address         string `envconfig:"ADDRESS" default:"localhost:8080"`
-	StoreInterval   int    `envconfig:"STORE_INTERVAL" default:"300"`
-	FileStoragePath string `envconfig:"FILE_STORAGE_PATH" default:"/tmp/metrics-db.json"`
-	Restore         bool   `envconfig:"RESTORE" default:"false"`
+	Address         string         `envconfig:"ADDRESS" default:"localhost:8080"`
+	StoreInterval   int            `envconfig:"STORE_INTERVAL" default:"300"`
+	FileStoragePath string         `envconfig:"FILE_STORAGE_PATH" default:"/tmp/metrics-db.json"`
+	Restore         bool           `envconfig:"RESTORE" default:"false"`
+	DatabaseConfig  PostgresConfig `envconfig:"DATABASE"`
 }
 
 func LoadConfig() *ServerConfig {
@@ -36,6 +37,9 @@ func LoadConfig() *ServerConfig {
 	var flagRestore bool
 	flag.BoolVar(&flagRestore, "r", false, "загружать данные из файла при старте")
 
+	var flagDsn string
+	flag.StringVar(&flagDsn, "d", "", "строка подключения к БД")
+
 	flag.Parse()
 
 	flag.Visit(func(f *flag.Flag) {
@@ -54,6 +58,10 @@ func LoadConfig() *ServerConfig {
 
 	if flagFileStoragePath != "" {
 		cfg.FileStoragePath = flagFileStoragePath
+	}
+
+	if flagDsn != "" {
+		cfg.DatabaseConfig.Dsn = flagDsn
 	}
 
 	if args := flag.Args(); len(args) > 0 {

@@ -8,8 +8,10 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/config"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
+	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository/postgres"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
 )
@@ -21,15 +23,17 @@ type handlers struct {
 	get        *get.GetHandler
 	getJSON    *get.GetJSONHandler
 	html       *html.HTMLHandler
+	ping       *ping.PingHandler
 }
 
 // ServerApp представляет основное серверное приложение со всеми зависимостями
 type ServerApp struct {
-	Cfg      *config.ServerConfig
-	handlers *handlers
-	server   *http.Server
-	storage  repository.MemStorage
-	logger   zerolog.Logger
+	Cfg                *config.ServerConfig
+	handlers           *handlers
+	server             *http.Server
+	storage            repository.MemStorage
+	postgresRepository PostgresRepository
+	logger             zerolog.Logger
 }
 
 // New создает новый экземпляр ServerApp с инициализированными зависимостями
@@ -54,22 +58,32 @@ func New(ctx context.Context) *ServerApp {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to create file storage")
 	}
+
+	psqlRepository, err := postgres.NewRepository(ctx, &cfg.DatabaseConfig)
+
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to create psql repository")
+	}
+
 	logger.Info().
 		Str("file", cfg.FileStoragePath).
+		Str("dns", cfg.DatabaseConfig.Dsn).
 		Int("interval", cfg.StoreInterval).
 		Bool("restore", cfg.Restore).
 		Msg("file storage initialized")
 
 	app := &ServerApp{
-		Cfg:     cfg,
-		storage: storage,
-		logger:  logger,
+		Cfg:                cfg,
+		storage:            storage,
+		postgresRepository: psqlRepository,
+		logger:             logger,
 		handlers: &handlers{
 			update:     update.NewUpdateHandler(storage),
 			updateJSON: update.NewUpdateJSONHandler(storage),
 			get:        get.NewGetHandler(storage),
 			getJSON:    get.NewGetJSONHandler(storage),
 			html:       html.NewHTMLHandler(storage),
+			ping:       ping.NewPingHandler(psqlRepository),
 		},
 	}
 
@@ -97,7 +111,7 @@ func (a *ServerApp) setupRouter() {
 	router.Handle(`POST /update/`, a.handlers.updateJSON)
 	router.Handle(`POST /value`, a.handlers.getJSON)
 	router.Handle(`POST /value/`, a.handlers.getJSON)
-
+	router.Handle(`GET /ping`, a.handlers.ping)
 	router.Handle(`GET /`, a.handlers.html)
 
 	a.server = &http.Server{

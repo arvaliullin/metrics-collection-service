@@ -8,8 +8,9 @@ import (
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
+	updatemock "github.com/arvaliullin/metrics-collection-service/internal/handler/update/mock"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,12 +23,13 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		method  string
-		target  string
-		body    models.Metrics
-		storage repository.MemStorage
-		want    want
+		name        string
+		method      string
+		target      string
+		body        models.Metrics
+		setup       func(*updatemock.MockMetricStorage)
+		want        want
+		invalidJSON bool
 	}{
 		{
 			name:   "test #1: valid gauge",
@@ -38,7 +40,10 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "gauge",
 				Value: func() *float64 { v := 3.14; return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
+			setup: func(ms *updatemock.MockMetricStorage) {
+				ms.EXPECT().UpdateGauge(gomock.Any(), "someMetric", 3.14)
+				ms.EXPECT().GetGauge(gomock.Any(), "someMetric").Return(3.14, nil)
+			},
 			want: want{
 				code:        http.StatusOK,
 				contentType: "application/json",
@@ -58,7 +63,10 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "counter",
 				Delta: func() *int64 { v := int64(42); return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
+			setup: func(ms *updatemock.MockMetricStorage) {
+				ms.EXPECT().AddCounterValue(gomock.Any(), "counterMetric", int64(42))
+				ms.EXPECT().GetCounter(gomock.Any(), "counterMetric").Return(int64(42), nil)
+			},
 			want: want{
 				code:        http.StatusOK,
 				contentType: "application/json",
@@ -78,7 +86,6 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "gauge",
 				Value: func() *float64 { v := 3.14; return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
 			want: want{
 				code: http.StatusMethodNotAllowed,
 				body: update.ErrMethodNotSupported.Error(),
@@ -92,7 +99,6 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "gauge",
 				Value: func() *float64 { v := 3.14; return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
 			want: want{
 				code: http.StatusBadRequest,
 				body: update.ErrMissingID.Error(),
@@ -106,7 +112,6 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				Value: func() *float64 { v := 3.14; return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
 			want: want{
 				code: http.StatusBadRequest,
 				body: update.ErrMissingType.Error(),
@@ -122,7 +127,6 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				Value: func() *float64 { v := 3.14; return &v }(),
 				Delta: func() *int64 { v := int64(42); return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
 			want: want{
 				code: http.StatusBadRequest,
 				body: update.ErrBothFieldsSet.Error(),
@@ -136,7 +140,6 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				MType: "gauge",
 			},
-			storage: repository.NewEmptyMemStorage(),
 			want: want{
 				code: http.StatusBadRequest,
 				body: update.ErrNoFieldsSet.Error(),
@@ -151,7 +154,6 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "invalid_type",
 				Value: func() *float64 { v := 3.14; return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
 			want: want{
 				code: http.StatusBadRequest,
 				body: update.ErrInvalidMetricType.Error(),
@@ -166,7 +168,6 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "gauge",
 				Delta: func() *int64 { v := int64(1); return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
 			want: want{
 				code: http.StatusBadRequest,
 				body: update.ErrMissingGaugeValue.Error(),
@@ -181,7 +182,6 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "counter",
 				Value: func() *float64 { v := 3.14; return &v }(),
 			},
-			storage: repository.NewEmptyMemStorage(),
 			want: want{
 				code: http.StatusBadRequest,
 				body: update.ErrMissingCounterDelta.Error(),
@@ -191,13 +191,26 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bodyBytes, _ := json.Marshal(tt.body)
-			body := bytes.NewReader(bodyBytes)
+			var reader *bytes.Reader
+			if tt.invalidJSON {
+				reader = bytes.NewReader([]byte("invalid json"))
+			} else {
+				bodyBytes, _ := json.Marshal(tt.body)
+				reader = bytes.NewReader(bodyBytes)
+			}
 
-			r := httptest.NewRequest(tt.method, tt.target, body)
+			r := httptest.NewRequest(tt.method, tt.target, reader)
 			w := httptest.NewRecorder()
 
-			handler := update.NewUpdateJSONHandler(tt.storage)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			storage := updatemock.NewMockMetricStorage(ctrl)
+			if tt.setup != nil {
+				tt.setup(storage)
+			}
+
+			handler := update.NewUpdateJSONHandler(storage)
 			mux := http.NewServeMux()
 			mux.Handle("/update", handler)
 			mux.ServeHTTP(w, r)

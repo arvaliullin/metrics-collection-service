@@ -31,7 +31,7 @@ type ServerApp struct {
 	Cfg                *config.ServerConfig
 	handlers           *handlers
 	server             *http.Server
-	storage            repository.MemStorage
+	storage            MetricStorage
 	postgresRepository PostgresRepository
 	logger             zerolog.Logger
 }

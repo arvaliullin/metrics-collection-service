@@ -8,17 +8,6 @@ import (
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 )
 
-type MemStorage interface {
-	UpdateGauge(ctx context.Context, id string, newGauge float64)
-	GetGauge(ctx context.Context, id string) (float64, error)
-	GetCounter(ctx context.Context, id string) (int64, error)
-	AddCounter(ctx context.Context, id string, newConter int64)
-	AddCounterValue(ctx context.Context, id string, delta int64)
-	ResetCounter(ctx context.Context, id string)
-	AllCounters(ctx context.Context) []models.Metrics
-	AllGauges(ctx context.Context) []models.Metrics
-}
-
 type memStorage struct {
 	mu      sync.RWMutex
 	gauge   map[string]models.Metrics

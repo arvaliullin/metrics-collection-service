@@ -12,6 +12,14 @@ run:
 test:
 	- go test ./...
 
+.PHONY: install-deps
+install-deps:
+	go install github.com/golang/mock/mockgen@v1.6.0
+
+.PHONY: generate-mocks
+generate-mocks:
+	go generate ./...
+
 .PHONY: fmt
 fmt:
 	- go fmt ./...

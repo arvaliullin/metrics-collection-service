@@ -11,7 +11,7 @@ import (
 
 type Agent struct {
 	client         *resty.Client
-	metricsStorage repository.MemStorage
+	metricsStorage MetricStorage
 	cfg            *Config
 	logger         zerolog.Logger
 }

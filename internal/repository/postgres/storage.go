@@ -8,6 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const metricsCapacity = 64
+
 // UpdateGauge устанавливает значение метрики типа gauge по идентификатору.
 func (r *Repository) UpdateGauge(ctx context.Context, id string, newGauge float64) {
 	const query = `
@@ -68,7 +70,7 @@ func (r *Repository) AllCounters(ctx context.Context) []models.Metrics {
 	}
 	defer rows.Close()
 
-	metrics := make([]models.Metrics, 0, 64)
+	metrics := make([]models.Metrics, 0, metricsCapacity)
 	for rows.Next() {
 		var (
 			id string
@@ -96,7 +98,7 @@ func (r *Repository) AllGauges(ctx context.Context) []models.Metrics {
 	}
 	defer rows.Close()
 
-	metrics := make([]models.Metrics, 0, 64)
+	metrics := make([]models.Metrics, 0, metricsCapacity)
 	for rows.Next() {
 		var (
 			id string

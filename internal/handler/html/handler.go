@@ -36,8 +36,8 @@ func (h *HTMLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	renderSection(&b, "Counter", func(w io.StringWriter) {
 		for _, m := range counters {
 			renderRow(w, m.ID, func(w io.StringWriter) {
-				if m.Value != nil {
-					w.WriteString(strconv.FormatInt(int64(*m.Value), 10))
+				if m.Delta != nil {
+					w.WriteString(strconv.FormatInt(*m.Delta, 10))
 				}
 			})
 		}

@@ -11,7 +11,6 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository/postgres"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
 )
@@ -28,12 +27,11 @@ type handlers struct {
 
 // ServerApp представляет основное серверное приложение со всеми зависимостями
 type ServerApp struct {
-	Cfg                *config.ServerConfig
-	handlers           *handlers
-	server             *http.Server
-	storage            MetricStorage
-	postgresRepository PostgresRepository
-	logger             zerolog.Logger
+	Cfg      *config.ServerConfig
+	handlers *handlers
+	server   *http.Server
+	storage  MetricStorage
+	logger   zerolog.Logger
 }
 
 // New создает новый экземпляр ServerApp с инициализированными зависимостями
@@ -46,44 +44,22 @@ func New(ctx context.Context) *ServerApp {
 		Logger().
 		Level(zerolog.InfoLevel)
 
-	storage, err := file.NewRepository(
-		ctx,
-		file.Config{
-			FilePath:             cfg.FileStoragePath,
-			StoreIntervalSeconds: cfg.StoreInterval,
-			Restore:              cfg.Restore,
-		},
-		logger,
-	)
+	storage, err := createStorage(ctx, cfg, logger)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to create file storage")
+		logger.Fatal().Err(err).Msg("failed to initialize storage")
 	}
-
-	psqlRepository, err := postgres.NewRepository(ctx, &cfg.DatabaseConfig)
-
-	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to create psql repository")
-	}
-
-	logger.Info().
-		Str("file", cfg.FileStoragePath).
-		Str("dns", cfg.DatabaseConfig.Dsn).
-		Int("interval", cfg.StoreInterval).
-		Bool("restore", cfg.Restore).
-		Msg("file storage initialized")
 
 	app := &ServerApp{
-		Cfg:                cfg,
-		storage:            storage,
-		postgresRepository: psqlRepository,
-		logger:             logger,
+		Cfg:     cfg,
+		storage: storage,
+		logger:  logger,
 		handlers: &handlers{
 			update:     update.NewUpdateHandler(storage),
 			updateJSON: update.NewUpdateJSONHandler(storage),
 			get:        get.NewGetHandler(storage),
 			getJSON:    get.NewGetJSONHandler(storage),
 			html:       html.NewHTMLHandler(storage),
-			ping:       ping.NewPingHandler(psqlRepository),
+			ping:       ping.NewPingHandler(storage),
 		},
 	}
 

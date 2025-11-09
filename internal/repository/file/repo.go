@@ -189,3 +189,8 @@ func (r *Repository) loadFromFile(ctx context.Context) error {
 
 	return nil
 }
+
+// Ping возвращает ошибку, так как подключение к БД не используется.
+func (r *Repository) Ping(ctx context.Context) error {
+	return fmt.Errorf("проверка соединения с БД недоступна: используется файловое хранилище")
+}

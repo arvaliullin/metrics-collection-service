@@ -161,4 +161,7 @@ func (r *Repository) AllGauges(ctx context.Context) []models.Metrics {
 	return metrics
 }
 
-
+// Ping возвращает ошибку, так как подключение к БД не используется.
+func (r *Repository) Ping(ctx context.Context) error {
+	return fmt.Errorf("проверка соединения с БД недоступна: используется in-memory хранилище")
+}

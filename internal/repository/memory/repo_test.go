@@ -189,5 +189,3 @@ func TestRepository_GetCounter(t *testing.T) {
 		})
 	}
 }
-
-

@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Ping проверяет доступность соединения с базой данных.
 func (repo *Repository) Ping(ctx context.Context) error {
 	if repo.pool == nil {
 		return fmt.Errorf("pool undefined")

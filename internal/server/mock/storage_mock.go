@@ -117,6 +117,20 @@ func (mr *MockMetricStorageMockRecorder) GetGauge(ctx, id interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGauge", reflect.TypeOf((*MockMetricStorage)(nil).GetGauge), ctx, id)
 }
 
+// Ping mocks base method.
+func (m *MockMetricStorage) Ping(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Ping", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Ping indicates an expected call of Ping.
+func (mr *MockMetricStorageMockRecorder) Ping(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockMetricStorage)(nil).Ping), ctx)
+}
+
 // UpdateGauge mocks base method.
 func (m *MockMetricStorage) UpdateGauge(ctx context.Context, id string, newGauge float64) {
 	m.ctrl.T.Helper()
@@ -127,41 +141,4 @@ func (m *MockMetricStorage) UpdateGauge(ctx context.Context, id string, newGauge
 func (mr *MockMetricStorageMockRecorder) UpdateGauge(ctx, id, newGauge interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGauge", reflect.TypeOf((*MockMetricStorage)(nil).UpdateGauge), ctx, id, newGauge)
-}
-
-// MockPostgresRepository is a mock of PostgresRepository interface.
-type MockPostgresRepository struct {
-	ctrl     *gomock.Controller
-	recorder *MockPostgresRepositoryMockRecorder
-}
-
-// MockPostgresRepositoryMockRecorder is the mock recorder for MockPostgresRepository.
-type MockPostgresRepositoryMockRecorder struct {
-	mock *MockPostgresRepository
-}
-
-// NewMockPostgresRepository creates a new mock instance.
-func NewMockPostgresRepository(ctrl *gomock.Controller) *MockPostgresRepository {
-	mock := &MockPostgresRepository{ctrl: ctrl}
-	mock.recorder = &MockPostgresRepositoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockPostgresRepository) EXPECT() *MockPostgresRepositoryMockRecorder {
-	return m.recorder
-}
-
-// Ping mocks base method.
-func (m *MockPostgresRepository) Ping(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Ping indicates an expected call of Ping.
-func (mr *MockPostgresRepositoryMockRecorder) Ping(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockPostgresRepository)(nil).Ping), ctx)
 }

@@ -15,8 +15,5 @@ type MetricStorage interface {
 	AddCounterValue(ctx context.Context, id string, delta int64)
 	AllCounters(ctx context.Context) []models.Metrics
 	AllGauges(ctx context.Context) []models.Metrics
-}
-
-type PostgresRepository interface {
 	Ping(ctx context.Context) error
 }

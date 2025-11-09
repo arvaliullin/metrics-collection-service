@@ -6,12 +6,12 @@ import (
 )
 
 // Ping проверяет доступность соединения с базой данных.
-func (repo *Repository) Ping(ctx context.Context) error {
-	if repo.pool == nil {
+func (r *Repository) Ping(ctx context.Context) error {
+	if r.pool == nil {
 		return fmt.Errorf("pool undefined")
 	}
 
-	if err := repo.pool.Ping(ctx); err != nil {
+	if err := r.pool.Ping(ctx); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 	return nil

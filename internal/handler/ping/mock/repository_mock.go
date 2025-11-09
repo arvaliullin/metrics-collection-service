@@ -11,31 +11,31 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockPostgresRepository is a mock of PostgresRepository interface.
-type MockPostgresRepository struct {
+// MockPinger is a mock of Pinger interface.
+type MockPinger struct {
 	ctrl     *gomock.Controller
-	recorder *MockPostgresRepositoryMockRecorder
+	recorder *MockPingerMockRecorder
 }
 
-// MockPostgresRepositoryMockRecorder is the mock recorder for MockPostgresRepository.
-type MockPostgresRepositoryMockRecorder struct {
-	mock *MockPostgresRepository
+// MockPingerMockRecorder is the mock recorder for MockPinger.
+type MockPingerMockRecorder struct {
+	mock *MockPinger
 }
 
-// NewMockPostgresRepository creates a new mock instance.
-func NewMockPostgresRepository(ctrl *gomock.Controller) *MockPostgresRepository {
-	mock := &MockPostgresRepository{ctrl: ctrl}
-	mock.recorder = &MockPostgresRepositoryMockRecorder{mock}
+// NewMockPinger creates a new mock instance.
+func NewMockPinger(ctrl *gomock.Controller) *MockPinger {
+	mock := &MockPinger{ctrl: ctrl}
+	mock.recorder = &MockPingerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockPostgresRepository) EXPECT() *MockPostgresRepositoryMockRecorder {
+func (m *MockPinger) EXPECT() *MockPingerMockRecorder {
 	return m.recorder
 }
 
 // Ping mocks base method.
-func (m *MockPostgresRepository) Ping(ctx context.Context) error {
+func (m *MockPinger) Ping(ctx context.Context) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Ping", ctx)
 	ret0, _ := ret[0].(error)
@@ -43,7 +43,7 @@ func (m *MockPostgresRepository) Ping(ctx context.Context) error {
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockPostgresRepositoryMockRecorder) Ping(ctx interface{}) *gomock.Call {
+func (mr *MockPingerMockRecorder) Ping(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockPostgresRepository)(nil).Ping), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockPinger)(nil).Ping), ctx)
 }

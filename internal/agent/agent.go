@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/arvaliullin/metrics-collection-service/internal/repository/memorystorage"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
 	"github.com/go-resty/resty/v2"
 	"github.com/rs/zerolog"
 )
@@ -27,7 +27,7 @@ func New(ctx context.Context) *Agent {
 
 	return &Agent{
 		client:         client,
-		metricsStorage: memorystorage.New(),
+		metricsStorage: memory.NewRepository(),
 		cfg:            loadConfig(),
 		logger:         logger,
 	}

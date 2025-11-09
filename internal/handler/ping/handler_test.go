@@ -40,7 +40,7 @@ func TestPingHandler_ServeHTTP(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := pingmock.NewMockPostgresRepository(ctrl)
+			repo := pingmock.NewMockPinger(ctrl)
 			repo.EXPECT().Ping(gomock.Any()).Return(tt.pingErr)
 
 			req := httptest.NewRequest(http.MethodGet, "/ping", nil)

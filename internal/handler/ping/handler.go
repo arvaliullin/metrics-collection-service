@@ -10,10 +10,10 @@ var (
 )
 
 type PingHandler struct {
-	repository PostgresRepository
+	repository Pinger
 }
 
-func NewPingHandler(repository PostgresRepository) *PingHandler {
+func NewPingHandler(repository Pinger) *PingHandler {
 	return &PingHandler{repository: repository}
 }
 

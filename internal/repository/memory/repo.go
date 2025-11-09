@@ -1,4 +1,4 @@
-package memorystorage
+package memory
 
 import (
 	"context"
@@ -8,51 +8,51 @@ import (
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 )
 
-// Storage предоставляет in-memory реализацию MetricStorage.
-type Storage struct {
+// Repository предоставляет in-memory реализацию MetricStorage.
+type Repository struct {
 	mu      sync.RWMutex
 	gauge   map[string]models.Metrics
 	counter map[string]models.Metrics
 }
 
-// New создает пустое in-memory хранилище метрик.
-func New() *Storage {
-	return &Storage{
+// NewRepository создает пустое in-memory хранилище метрик.
+func NewRepository() *Repository {
+	return &Repository{
 		gauge:   make(map[string]models.Metrics),
 		counter: make(map[string]models.Metrics),
 	}
 }
 
 // UpdateGauge замещает значение метрики типа gauge значением newGauge.
-func (s *Storage) UpdateGauge(ctx context.Context, id string, newGauge float64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (r *Repository) UpdateGauge(ctx context.Context, id string, newGauge float64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	metric := models.Metrics{
 		ID:    id,
 		MType: models.Gauge,
 		Value: &newGauge,
 	}
-	s.gauge[id] = metric
+	r.gauge[id] = metric
 }
 
 // GetGauge возвращает значение метрики gauge для id.
-func (s *Storage) GetGauge(ctx context.Context, id string) (float64, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+func (r *Repository) GetGauge(ctx context.Context, id string) (float64, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	if metric, exists := s.gauge[id]; exists {
+	if metric, exists := r.gauge[id]; exists {
 		return *metric.Value, nil
 	}
 	return 0, fmt.Errorf("для %s не задано значение Gauage", id)
 }
 
 // GetCounter возвращает значение метрики counter для id.
-func (s *Storage) GetCounter(ctx context.Context, id string) (int64, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+func (r *Repository) GetCounter(ctx context.Context, id string) (int64, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	if metric, exists := s.counter[id]; exists {
+	if metric, exists := r.counter[id]; exists {
 		if metric.Value != nil {
 			return int64(*metric.Value), nil
 		} else if metric.Delta != nil {
@@ -63,12 +63,12 @@ func (s *Storage) GetCounter(ctx context.Context, id string) (int64, error) {
 }
 
 // AddCounter добавляет к предыдущему значению newCounter.
-func (s *Storage) AddCounter(ctx context.Context, id string, newCounter int64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (r *Repository) AddCounter(ctx context.Context, id string, newCounter int64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	var currentDelta int64
-	if metric, exists := s.counter[id]; exists {
+	if metric, exists := r.counter[id]; exists {
 		if metric.Delta != nil {
 			currentDelta = *metric.Delta
 		} else if metric.Value != nil {
@@ -83,13 +83,13 @@ func (s *Storage) AddCounter(ctx context.Context, id string, newCounter int64) {
 		Delta: &newDelta,
 	}
 
-	s.counter[id] = newMetric
+	r.counter[id] = newMetric
 }
 
 // ResetCounter сбрасывает значение счетчика до нуля.
-func (s *Storage) ResetCounter(ctx context.Context, id string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (r *Repository) ResetCounter(ctx context.Context, id string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	zeroDelta := int64(0)
 	newMetric := models.Metrics{
@@ -98,16 +98,16 @@ func (s *Storage) ResetCounter(ctx context.Context, id string) {
 		Delta: &zeroDelta,
 	}
 
-	s.counter[id] = newMetric
+	r.counter[id] = newMetric
 }
 
 // AddCounterValue добавляет значение delta к счетчику.
-func (s *Storage) AddCounterValue(ctx context.Context, id string, delta int64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (r *Repository) AddCounterValue(ctx context.Context, id string, delta int64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	var currentValue int64
-	if metric, exists := s.counter[id]; exists {
+	if metric, exists := r.counter[id]; exists {
 		if metric.Value != nil {
 			currentValue = int64(*metric.Value)
 		}
@@ -120,17 +120,17 @@ func (s *Storage) AddCounterValue(ctx context.Context, id string, delta int64) {
 		Value: &newValue,
 	}
 
-	s.counter[id] = newMetric
+	r.counter[id] = newMetric
 }
 
 // AllCounters возвращает все счетчики.
-func (s *Storage) AllCounters(ctx context.Context) []models.Metrics {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+func (r *Repository) AllCounters(ctx context.Context) []models.Metrics {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	metrics := make([]models.Metrics, 0, len(s.counter))
+	metrics := make([]models.Metrics, 0, len(r.counter))
 
-	for _, value := range s.counter {
+	for _, value := range r.counter {
 		newMetric := models.Metrics{
 			ID:    value.ID,
 			MType: value.MType,
@@ -148,15 +148,17 @@ func (s *Storage) AllCounters(ctx context.Context) []models.Metrics {
 }
 
 // AllGauges возвращает все gauge-метрики.
-func (s *Storage) AllGauges(ctx context.Context) []models.Metrics {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+func (r *Repository) AllGauges(ctx context.Context) []models.Metrics {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	metrics := make([]models.Metrics, 0, len(s.gauge))
+	metrics := make([]models.Metrics, 0, len(r.gauge))
 
-	for _, value := range s.gauge {
+	for _, value := range r.gauge {
 		metrics = append(metrics, value)
 	}
 
 	return metrics
 }
+
+

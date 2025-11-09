@@ -10,7 +10,7 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository/filestorage"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/postgres"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
@@ -46,9 +46,9 @@ func New(ctx context.Context) *ServerApp {
 		Logger().
 		Level(zerolog.InfoLevel)
 
-	storage, err := filestorage.New(
+	storage, err := file.NewRepository(
 		ctx,
-		filestorage.Config{
+		file.Config{
 			FilePath:             cfg.FileStoragePath,
 			StoreIntervalSeconds: cfg.StoreInterval,
 			Restore:              cfg.Restore,
@@ -140,7 +140,7 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		a.logger.Error().Err(err).Msg("error shutting down server")
 	}
 
-	if fileStorage, ok := a.storage.(*filestorage.Storage); ok {
+	if fileStorage, ok := a.storage.(*file.Repository); ok {
 		if err := fileStorage.Close(); err != nil {
 			return err
 		}

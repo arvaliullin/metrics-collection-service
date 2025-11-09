@@ -60,3 +60,7 @@ prune: down
 	- docker volume prune -f
 	- docker network prune -f
 	- docker system prune -a --volumes -f
+
+.PHONY: migration-create
+migration-create:
+	goose -dir migrations -s create create_metrics sql

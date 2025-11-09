@@ -1,4 +1,4 @@
-package repository
+package filestorage
 
 import (
 	"context"
@@ -12,15 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileStorage_SaveAndLoad(t *testing.T) {
+func TestStorage_SaveAndLoad(t *testing.T) {
 	tmpFile := "/tmp/test-metrics-db.json"
 	defer os.Remove(tmpFile)
 
 	logger := zerolog.Nop()
 
-	fileStorage, err := NewFileStorage(
+	fileStorage, err := New(
 		context.Background(),
-		FileStorageConfig{
+		Config{
 			FilePath:             tmpFile,
 			StoreIntervalSeconds: 0,
 			Restore:              false,
@@ -37,9 +37,9 @@ func TestFileStorage_SaveAndLoad(t *testing.T) {
 	err = fileStorage.Close()
 	require.NoError(t, err)
 
-	newFileStorage, err := NewFileStorage(
+	newFileStorage, err := New(
 		context.Background(),
-		FileStorageConfig{
+		Config{
 			FilePath:             tmpFile,
 			StoreIntervalSeconds: 0,
 			Restore:              true,
@@ -58,15 +58,15 @@ func TestFileStorage_SaveAndLoad(t *testing.T) {
 	assert.Equal(t, int64(10), counter)
 }
 
-func TestFileStorage_FileFormat(t *testing.T) {
+func TestStorage_FileFormat(t *testing.T) {
 	tmpFile := "/tmp/test-metrics-format.json"
 	defer os.Remove(tmpFile)
 
 	logger := zerolog.Nop()
 
-	fileStorage, err := NewFileStorage(
+	fileStorage, err := New(
 		context.Background(),
-		FileStorageConfig{
+		Config{
 			FilePath:             tmpFile,
 			StoreIntervalSeconds: 1,
 			Restore:              false,

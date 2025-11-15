@@ -17,7 +17,7 @@ INSERT INTO metrics_gauge (id, value)
 VALUES ($1, $2)
 ON CONFLICT (id) DO UPDATE SET
 	value = EXCLUDED.value`
-	_, _ = r.pool.Exec(ctx, query, id, newGauge)
+	r.pool.Exec(ctx, query, id, newGauge)
 }
 
 // GetGauge возвращает значение метрики gauge по идентификатору.
@@ -53,7 +53,7 @@ INSERT INTO metrics_counter (id, value)
 VALUES ($1, $2)
 ON CONFLICT (id) DO UPDATE SET
 	value = metrics_counter.value + EXCLUDED.value`
-	_, _ = r.pool.Exec(ctx, query, id, newCounter)
+	r.pool.Exec(ctx, query, id, newCounter)
 }
 
 // AddCounterValue увеличивает значение счётчика на delta.
@@ -124,5 +124,5 @@ INSERT INTO metrics_counter (id, value)
 VALUES ($1, 0)
 ON CONFLICT (id) DO UPDATE SET
 	value = 0`
-	_, _ = r.pool.Exec(ctx, query, id)
+	r.pool.Exec(ctx, query, id)
 }

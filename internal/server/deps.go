@@ -13,6 +13,7 @@ type MetricStorage interface {
 	GetCounter(ctx context.Context, id string) (int64, error)
 	AddCounter(ctx context.Context, id string, newCounter int64)
 	AddCounterValue(ctx context.Context, id string, delta int64)
+	BatchUpdate(ctx context.Context, metrics []models.Metrics) error
 	AllCounters(ctx context.Context) []models.Metrics
 	AllGauges(ctx context.Context) []models.Metrics
 	Ping(ctx context.Context) error

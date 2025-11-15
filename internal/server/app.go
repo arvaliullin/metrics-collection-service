@@ -10,6 +10,7 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
+	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
@@ -19,6 +20,7 @@ import (
 type handlers struct {
 	update     *update.UpdateHandler
 	updateJSON *update.UpdateJSONHandler
+	updates    *updates.UpdatesHandler
 	get        *get.GetHandler
 	getJSON    *get.GetJSONHandler
 	html       *html.HTMLHandler
@@ -56,6 +58,7 @@ func New(ctx context.Context) *ServerApp {
 		handlers: &handlers{
 			update:     update.NewUpdateHandler(storage),
 			updateJSON: update.NewUpdateJSONHandler(storage),
+			updates:    updates.NewUpdatesHandler(storage),
 			get:        get.NewGetHandler(storage),
 			getJSON:    get.NewGetJSONHandler(storage),
 			html:       html.NewHTMLHandler(storage),
@@ -85,6 +88,8 @@ func (a *ServerApp) setupRouter() {
 
 	router.Handle(`POST /update`, a.handlers.updateJSON)
 	router.Handle(`POST /update/`, a.handlers.updateJSON)
+	router.Handle(`POST /updates`, a.handlers.updates)
+	router.Handle(`POST /updates/`, a.handlers.updates)
 	router.Handle(`POST /value`, a.handlers.getJSON)
 	router.Handle(`POST /value/`, a.handlers.getJSON)
 	router.Handle(`GET /ping`, a.handlers.ping)

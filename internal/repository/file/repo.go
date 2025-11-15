@@ -85,6 +85,15 @@ func (r *Repository) AddCounterValue(ctx context.Context, id string, delta int64
 	r.triggerSave(ctx)
 }
 
+// BatchUpdate применяет пакет метрик и инициирует сохранение при необходимости.
+func (r *Repository) BatchUpdate(ctx context.Context, metrics []models.Metrics) error {
+	if err := r.memStorage.BatchUpdate(ctx, metrics); err != nil {
+		return err
+	}
+	r.triggerSave(ctx)
+	return nil
+}
+
 // AllCounters возвращает все counter-метрики.
 func (r *Repository) AllCounters(ctx context.Context) []models.Metrics {
 	return r.memStorage.AllCounters(ctx)

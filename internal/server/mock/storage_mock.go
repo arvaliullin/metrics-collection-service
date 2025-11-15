@@ -87,6 +87,20 @@ func (mr *MockMetricStorageMockRecorder) AllGauges(ctx interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllGauges", reflect.TypeOf((*MockMetricStorage)(nil).AllGauges), ctx)
 }
 
+// BatchUpdate mocks base method.
+func (m *MockMetricStorage) BatchUpdate(ctx context.Context, metrics []models.Metrics) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchUpdate", ctx, metrics)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BatchUpdate indicates an expected call of BatchUpdate.
+func (mr *MockMetricStorageMockRecorder) BatchUpdate(ctx, metrics interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchUpdate", reflect.TypeOf((*MockMetricStorage)(nil).BatchUpdate), ctx, metrics)
+}
+
 // GetCounter mocks base method.
 func (m *MockMetricStorage) GetCounter(ctx context.Context, id string) (int64, error) {
 	m.ctrl.T.Helper()

@@ -65,7 +65,7 @@ func (h *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(metrics)
+	json.NewEncoder(w).Encode(metrics)
 }
 
 func validateMetric(metric *models.Metrics) error {

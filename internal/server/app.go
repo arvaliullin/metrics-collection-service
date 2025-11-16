@@ -46,6 +46,14 @@ func New(ctx context.Context) *ServerApp {
 		Logger().
 		Level(zerolog.InfoLevel)
 
+	logger.Info().
+		Str("address", cfg.Address).
+		Int("store_interval", cfg.StoreInterval).
+		Str("file_storage_path", cfg.FileStoragePath).
+		Bool("restore", cfg.Restore).
+		Str("db_dsn", cfg.DatabaseConfig.Dsn).
+		Msg("server configuration loaded")
+
 	storage, err := createStorage(ctx, cfg, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to initialize storage")

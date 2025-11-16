@@ -6,16 +6,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/go-resty/resty/v2"
 )
 
 // compressMetricsBatch сериализует и сжимает список метрик.
-func compressMetricsBatch(metrics []models.Metrics) (io.Reader, error) {
+func compressMetricsBatch(metrics []models.Metrics) ([]byte, error) {
 	jsonData, err := json.Marshal(metrics)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при сериализации метрик в JSON: %w", err)
@@ -23,13 +23,17 @@ func compressMetricsBatch(metrics []models.Metrics) (io.Reader, error) {
 
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
-	defer gz.Close()
 
 	if _, err := gz.Write(jsonData); err != nil {
+		gz.Close()
 		return nil, fmt.Errorf("ошибка при сжатии батча метрик: %w", err)
 	}
 
-	return &buf, nil
+	if err := gz.Close(); err != nil {
+		return nil, fmt.Errorf("ошибка при закрытии gzip писателя: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 func (a *Agent) buildBatch(ctx context.Context) []models.Metrics {
@@ -81,18 +85,24 @@ func (a *Agent) sendBatch(ctx context.Context) {
 		return
 	}
 
-	resp, err := a.client.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Content-Encoding", "gzip").
-		SetHeader("Accept-Encoding", "gzip").
-		SetBody(compressedBody).
-		Post(requestURL)
+	var resp *resty.Response
+	err = a.retryStrategy.DoWithRetry(ctx, func(ctx context.Context) error {
+		var reqErr error
+		resp, reqErr = a.client.R().
+			SetContext(ctx).
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Content-Encoding", "gzip").
+			SetHeader("Accept-Encoding", "gzip").
+			SetBody(compressedBody).
+			Post(requestURL)
+		return reqErr
+	})
 	if err != nil {
 		a.logger.Error().
 			Err(err).
 			Str("method", "sendBatch").
 			Int("metrics_count", len(metrics)).
-			Msg("failed to send metrics batch")
+			Msg("failed to send metrics batch after retries")
 		return
 	}
 

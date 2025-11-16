@@ -6,7 +6,7 @@ import (
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 )
 
-// BatchUpdate применяет пакет метрик в рамках одной блокировки.
+// BatchUpdate применяет пакет метрик.
 func (r *Repository) BatchUpdate(ctx context.Context, metrics []models.Metrics) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

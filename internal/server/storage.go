@@ -7,6 +7,8 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/postgres"
+	retryrepo "github.com/arvaliullin/metrics-collection-service/internal/repository/retry"
+	retryutil "github.com/arvaliullin/metrics-collection-service/internal/utils/retry"
 	"github.com/rs/zerolog"
 )
 
@@ -21,11 +23,21 @@ func createStorage(
 		if err != nil {
 			return nil, err
 		}
+
+		retryStrategy := retryutil.NewStrategy(
+			retryutil.DefaultDelays,
+			retryrepo.IsConnectionRetryable,
+		)
+
+		storage, err := retryrepo.NewPostgresAdapter(psqlRepo, retryStrategy)
+		if err != nil {
+			return nil, err
+		}
+
 		logger.Info().
 			Str("backend", "postgres").
-			Str("db_dsn_present", "true").
 			Msg("storage initialized")
-		return psqlRepo, nil
+		return storage, nil
 	}
 
 	if cfg.FileStoragePath != "" {

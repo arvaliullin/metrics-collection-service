@@ -60,7 +60,7 @@ func NewRepository(ctx context.Context, cfg Config, logger zerolog.Logger) (*Rep
 // UpdateGauge обновляет значение gauge-метрики и инициирует сохранение.
 func (r *Repository) UpdateGauge(ctx context.Context, id string, newGauge float64) {
 	r.memStorage.UpdateGauge(ctx, id, newGauge)
-	r.triggerSave(ctx)
+	r.saveImmediate(ctx)
 }
 
 // GetGauge возвращает значение gauge-метрики.
@@ -76,13 +76,13 @@ func (r *Repository) GetCounter(ctx context.Context, id string) (int64, error) {
 // AddCounter устанавливает значение counter-метрики и инициирует сохранение.
 func (r *Repository) AddCounter(ctx context.Context, id string, newCounter int64) {
 	r.memStorage.AddCounterValue(ctx, id, newCounter)
-	r.triggerSave(ctx)
+	r.saveImmediate(ctx)
 }
 
 // AddCounterValue увеличивает counter-метрику на delta и инициирует сохранение.
 func (r *Repository) AddCounterValue(ctx context.Context, id string, delta int64) {
 	r.memStorage.AddCounterValue(ctx, id, delta)
-	r.triggerSave(ctx)
+	r.saveImmediate(ctx)
 }
 
 // BatchUpdate применяет пакет метрик и инициирует сохранение при необходимости.
@@ -90,7 +90,7 @@ func (r *Repository) BatchUpdate(ctx context.Context, metrics []models.Metrics) 
 	if err := r.memStorage.BatchUpdate(ctx, metrics); err != nil {
 		return err
 	}
-	r.triggerSave(ctx)
+	r.saveImmediate(ctx)
 	return nil
 }
 
@@ -116,7 +116,8 @@ func (r *Repository) Close() error {
 	return r.saveToFile(context.TODO())
 }
 
-func (r *Repository) triggerSave(ctx context.Context) {
+// saveImmediate сохраняет данные при storeInterval == 0
+func (r *Repository) saveImmediate(ctx context.Context) {
 	if r.storeInterval == 0 {
 		if err := r.saveToFile(ctx); err != nil {
 			r.logger.Error().Err(err).Msg("failed to save to file")

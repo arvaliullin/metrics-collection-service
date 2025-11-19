@@ -11,6 +11,7 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
@@ -32,7 +33,7 @@ type ServerApp struct {
 	Cfg      *config.ServerConfig
 	handlers *handlers
 	server   *http.Server
-	storage  MetricStorage
+	storage  repository.MetricStorage
 	logger   zerolog.Logger
 }
 

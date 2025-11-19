@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
-	updatemock "github.com/arvaliullin/metrics-collection-service/internal/handler/update/mock"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +27,7 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 		method      string
 		target      string
 		body        models.Metrics
-		setup       func(*updatemock.MockMetricStorage)
+		setup       func(*repomock.MockMetricStorage)
 		want        want
 		invalidJSON bool
 	}{
@@ -40,7 +40,7 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "gauge",
 				Value: func() *float64 { v := 3.14; return &v }(),
 			},
-			setup: func(ms *updatemock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().UpdateGauge(gomock.Any(), "someMetric", 3.14)
 				ms.EXPECT().GetGauge(gomock.Any(), "someMetric").Return(3.14, nil)
 			},
@@ -63,7 +63,7 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				MType: "counter",
 				Delta: func() *int64 { v := int64(42); return &v }(),
 			},
-			setup: func(ms *updatemock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().AddCounterValue(gomock.Any(), "counterMetric", int64(42))
 				ms.EXPECT().GetCounter(gomock.Any(), "counterMetric").Return(int64(42), nil)
 			},
@@ -205,7 +205,7 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			storage := updatemock.NewMockMetricStorage(ctrl)
+			storage := repomock.NewMockMetricStorage(ctrl)
 			if tt.setup != nil {
 				tt.setup(storage)
 			}

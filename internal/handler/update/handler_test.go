@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
-	updatemock "github.com/arvaliullin/metrics-collection-service/internal/handler/update/mock"
+	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,14 +22,14 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 		name   string
 		method string
 		target string
-		setup  func(*updatemock.MockMetricStorage)
+		setup  func(*repomock.MockMetricStorage)
 		want   want
 	}{
 		{
 			name:   "test #1: valid counter",
 			method: http.MethodPost,
 			target: "/update/counter/someMetric/527",
-			setup: func(ms *updatemock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().AddCounter(gomock.Any(), "someMetric", int64(527))
 			},
 			want: want{
@@ -51,7 +51,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			name:   "test #3: valid gauge",
 			method: http.MethodPost,
 			target: "/update/gauge/gauage_1/3.14",
-			setup: func(ms *updatemock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().UpdateGauge(gomock.Any(), "gauage_1", 3.14)
 			},
 			want: want{
@@ -99,7 +99,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			storage := updatemock.NewMockMetricStorage(ctrl)
+			storage := repomock.NewMockMetricStorage(ctrl)
 			if tt.setup != nil {
 				tt.setup(storage)
 			}

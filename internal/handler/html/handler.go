@@ -5,15 +5,17 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
 
 // HTMLHandler обрабатывает GET-запрос и возвращает HTML-страницу со списком метрик.
 type HTMLHandler struct {
-	memStorage MetricStorage
+	memStorage repository.MetricStorage
 }
 
 // NewHTMLHandler создает обработчик HTML-страницы со списком метрик.
-func NewHTMLHandler(memStorage MetricStorage) *HTMLHandler {
+func NewHTMLHandler(memStorage repository.MetricStorage) *HTMLHandler {
 	return &HTMLHandler{memStorage: memStorage}
 }
 

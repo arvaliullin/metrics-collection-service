@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
 
 var (
@@ -16,10 +17,10 @@ var (
 )
 
 type GetJSONHandler struct {
-	memStorage MetricStorage
+	memStorage repository.MetricStorage
 }
 
-func NewGetJSONHandler(memStorage MetricStorage) *GetJSONHandler {
+func NewGetJSONHandler(memStorage repository.MetricStorage) *GetJSONHandler {
 	return &GetJSONHandler{memStorage: memStorage}
 }
 

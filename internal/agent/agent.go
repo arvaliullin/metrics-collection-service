@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
 	retryutil "github.com/arvaliullin/metrics-collection-service/internal/utils/retry"
 	"github.com/go-resty/resty/v2"
@@ -12,7 +13,7 @@ import (
 
 type Agent struct {
 	client         *resty.Client
-	metricsStorage MetricStorage
+	metricsStorage repository.MetricStorage
 	cfg            *Config
 	logger         zerolog.Logger
 	retryStrategy  *retryutil.Strategy

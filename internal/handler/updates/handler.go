@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
 
 var (
@@ -22,10 +23,10 @@ var (
 )
 
 type UpdatesHandler struct {
-	memStorage MetricStorage
+	memStorage repository.MetricStorage
 }
 
-func NewUpdatesHandler(memStorage MetricStorage) *UpdatesHandler {
+func NewUpdatesHandler(memStorage repository.MetricStorage) *UpdatesHandler {
 	return &UpdatesHandler{memStorage: memStorage}
 }
 

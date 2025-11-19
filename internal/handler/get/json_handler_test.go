@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
-	getmock "github.com/arvaliullin/metrics-collection-service/internal/handler/get/mock"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +27,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 		method      string
 		target      string
 		body        models.Metrics
-		setup       func(*getmock.MockMetricStorage)
+		setup       func(*repomock.MockMetricStorage)
 		want        want
 		invalidJSON bool
 	}{
@@ -39,7 +39,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				MType: "gauge",
 			},
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetGauge(gomock.Any(), "someMetric").Return(3.14, nil)
 			},
 			want: want{
@@ -60,7 +60,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "counterMetric",
 				MType: "counter",
 			},
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetCounter(gomock.Any(), "counterMetric").Return(int64(42), nil)
 			},
 			want: want{
@@ -118,7 +118,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "nonexistent",
 				MType: "gauge",
 			},
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetGauge(gomock.Any(), "nonexistent").Return(0.0, get.ErrNotFound)
 			},
 			want: want{
@@ -134,7 +134,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "nonexistent",
 				MType: "counter",
 			},
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetCounter(gomock.Any(), "nonexistent").Return(int64(0), get.ErrNotFound)
 			},
 			want: want{
@@ -176,7 +176,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			storage := getmock.NewMockMetricStorage(ctrl)
+			storage := repomock.NewMockMetricStorage(ctrl)
 			if tt.setup != nil {
 				tt.setup(storage)
 			}

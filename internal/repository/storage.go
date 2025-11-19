@@ -1,4 +1,4 @@
-package server
+package repository
 
 import (
 	"context"
@@ -6,7 +6,9 @@ import (
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 )
 
-//go:generate mockgen -source=deps.go -destination=mock/storage_mock.go -package=server_mock
+// MetricStorage определяет общий контракт хранилища метрик.
+//
+//go:generate mockgen -source=storage.go -destination=mock/storage_mock.go -package=repomock
 type MetricStorage interface {
 	UpdateGauge(ctx context.Context, id string, newGauge float64)
 	GetGauge(ctx context.Context, id string) (float64, error)
@@ -16,5 +18,6 @@ type MetricStorage interface {
 	BatchUpdate(ctx context.Context, metrics []models.Metrics) error
 	AllCounters(ctx context.Context) []models.Metrics
 	AllGauges(ctx context.Context) []models.Metrics
+	ResetCounter(ctx context.Context, id string)
 	Ping(ctx context.Context) error
 }

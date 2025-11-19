@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
-	updatesmock "github.com/arvaliullin/metrics-collection-service/internal/handler/updates/mock"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +19,7 @@ func TestUpdatesHandler_MethodNotAllowed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	storage := updatesmock.NewMockMetricStorage(ctrl)
+	storage := repomock.NewMockMetricStorage(ctrl)
 	handler := updates.NewUpdatesHandler(storage)
 
 	req := httptest.NewRequest(http.MethodGet, "/updates", nil)
@@ -34,7 +34,7 @@ func TestUpdatesHandler_InvalidJSON(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	storage := updatesmock.NewMockMetricStorage(ctrl)
+	storage := repomock.NewMockMetricStorage(ctrl)
 	handler := updates.NewUpdatesHandler(storage)
 
 	req := httptest.NewRequest(http.MethodPost, "/updates", bytes.NewReader([]byte("invalid")))
@@ -49,7 +49,7 @@ func TestUpdatesHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	storage := updatesmock.NewMockMetricStorage(ctrl)
+	storage := repomock.NewMockMetricStorage(ctrl)
 	handler := updates.NewUpdatesHandler(storage)
 
 	payload := []models.Metrics{

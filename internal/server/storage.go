@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/config"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/postgres"
@@ -17,7 +18,7 @@ func createStorage(
 	ctx context.Context,
 	cfg *config.ServerConfig,
 	logger zerolog.Logger,
-) (MetricStorage, error) {
+) (repository.MetricStorage, error) {
 	if cfg.DatabaseConfig.Dsn != "" {
 		psqlRepo, err := postgres.NewRepository(ctx, &cfg.DatabaseConfig)
 		if err != nil {

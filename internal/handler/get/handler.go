@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 )
 
 var (
@@ -14,10 +15,10 @@ var (
 )
 
 type GetHandler struct {
-	memStorage MetricStorage
+	memStorage repository.MetricStorage
 }
 
-func NewGetHandler(memStorage MetricStorage) *GetHandler {
+func NewGetHandler(memStorage repository.MetricStorage) *GetHandler {
 	return &GetHandler{memStorage: memStorage}
 }
 

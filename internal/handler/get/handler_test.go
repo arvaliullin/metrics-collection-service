@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
-	getmock "github.com/arvaliullin/metrics-collection-service/internal/handler/get/mock"
+	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,13 +21,13 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 	tests := []struct {
 		name  string
 		path  string
-		setup func(*getmock.MockMetricStorage)
+		setup func(*repomock.MockMetricStorage)
 		want  want
 	}{
 		{
 			name: "test #1: valid gauge retrieval",
 			path: "/gauge/someMetric",
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetGauge(gomock.Any(), "someMetric").Return(3.14, nil)
 			},
 			want: want{
@@ -39,7 +39,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #2: valid counter retrieval",
 			path: "/counter/counterMetric",
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetCounter(gomock.Any(), "counterMetric").Return(int64(42), nil)
 			},
 			want: want{
@@ -51,7 +51,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #3: gauge not found",
 			path: "/gauge/nonexistent",
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetGauge(gomock.Any(), "nonexistent").Return(0.0, get.ErrNotFound)
 			},
 			want: want{
@@ -62,7 +62,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #4: counter not found",
 			path: "/counter/nonexistent",
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetCounter(gomock.Any(), "nonexistent").Return(int64(0), get.ErrNotFound)
 			},
 			want: want{
@@ -81,7 +81,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #6: gauge with zero value",
 			path: "/gauge/zeroMetric",
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetGauge(gomock.Any(), "zeroMetric").Return(0.0, nil)
 			},
 			want: want{
@@ -93,7 +93,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #7: counter with zero value",
 			path: "/counter/zeroCounter",
-			setup: func(ms *getmock.MockMetricStorage) {
+			setup: func(ms *repomock.MockMetricStorage) {
 				ms.EXPECT().GetCounter(gomock.Any(), "zeroCounter").Return(int64(0), nil)
 			},
 			want: want{
@@ -109,7 +109,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			storage := getmock.NewMockMetricStorage(ctrl)
+			storage := repomock.NewMockMetricStorage(ctrl)
 			if tt.setup != nil {
 				tt.setup(storage)
 			}
@@ -137,7 +137,7 @@ func TestGetHandler_MissingID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	storage := getmock.NewMockMetricStorage(ctrl)
+	storage := repomock.NewMockMetricStorage(ctrl)
 
 	r := httptest.NewRequest(http.MethodGet, "/gauge", nil)
 	w := httptest.NewRecorder()

@@ -6,31 +6,20 @@ import (
 	"fmt"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	retryutil "github.com/arvaliullin/metrics-collection-service/internal/utils/retry"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type PostgresRepository interface {
-	UpdateGauge(ctx context.Context, id string, newGauge float64)
-	GetGauge(ctx context.Context, id string) (float64, error)
-	GetCounter(ctx context.Context, id string) (int64, error)
-	AddCounter(ctx context.Context, id string, newCounter int64)
-	AddCounterValue(ctx context.Context, id string, delta int64)
-	BatchUpdate(ctx context.Context, metrics []models.Metrics) error
-	AllCounters(ctx context.Context) []models.Metrics
-	AllGauges(ctx context.Context) []models.Metrics
-	Ping(ctx context.Context) error
-}
-
 // PostgresAdapter добавляет стратегию повторов поверх репозитория PostgreSQL.
 type PostgresAdapter struct {
-	repo     PostgresRepository
+	repo     repository.MetricStorage
 	strategy *retryutil.Strategy
 }
 
 // NewPostgresAdapter создаёт адаптер репозитория PostgreSQL.
-func NewPostgresAdapter(repo PostgresRepository, strategy *retryutil.Strategy) (*PostgresAdapter, error) {
+func NewPostgresAdapter(repo repository.MetricStorage, strategy *retryutil.Strategy) (*PostgresAdapter, error) {
 	if repo == nil {
 		return nil, fmt.Errorf("postgres repository is undefined")
 	}
@@ -87,6 +76,14 @@ func (a *PostgresAdapter) AddCounter(ctx context.Context, id string, newCounter 
 func (a *PostgresAdapter) AddCounterValue(ctx context.Context, id string, delta int64) {
 	a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
 		a.repo.AddCounterValue(ctx, id, delta)
+		return nil
+	})
+}
+
+// ResetCounter сбрасывает значение счётчика.
+func (a *PostgresAdapter) ResetCounter(ctx context.Context, id string) {
+	a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
+		a.repo.ResetCounter(ctx, id)
 		return nil
 	})
 }

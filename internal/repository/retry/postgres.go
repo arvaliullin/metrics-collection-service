@@ -29,7 +29,7 @@ type PostgresAdapter struct {
 	strategy *retryutil.Strategy
 }
 
-// NewPostgresAdapter создаёт адаптер и настраивает стратегию повторов по умолчанию при необходимости.
+// NewPostgresAdapter создаёт адаптер репозитория PostgreSQL.
 func NewPostgresAdapter(repo PostgresRepository, strategy *retryutil.Strategy) (*PostgresAdapter, error) {
 	if repo == nil {
 		return nil, fmt.Errorf("postgres repository is undefined")
@@ -45,12 +45,15 @@ func NewPostgresAdapter(repo PostgresRepository, strategy *retryutil.Strategy) (
 	}, nil
 }
 
-// UpdateGauge устанавливает значение gauge без повторов на уровне адаптера.
+// UpdateGauge устанавливает значение gauge.
 func (a *PostgresAdapter) UpdateGauge(ctx context.Context, id string, newGauge float64) {
-	a.repo.UpdateGauge(ctx, id, newGauge)
+	a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
+		a.repo.UpdateGauge(ctx, id, newGauge)
+		return nil
+	})
 }
 
-// GetGauge возвращает значение gauge с учётом повторов при сбоях соединения.
+// GetGauge возвращает значение gauge.
 func (a *PostgresAdapter) GetGauge(ctx context.Context, id string) (float64, error) {
 	var value float64
 	err := a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
@@ -61,7 +64,7 @@ func (a *PostgresAdapter) GetGauge(ctx context.Context, id string) (float64, err
 	return value, err
 }
 
-// GetCounter возвращает значение counter с повторными попытками при ошибках соединения.
+// GetCounter возвращает значение counter.
 func (a *PostgresAdapter) GetCounter(ctx context.Context, id string) (int64, error) {
 	var value int64
 	err := a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
@@ -72,34 +75,40 @@ func (a *PostgresAdapter) GetCounter(ctx context.Context, id string) (int64, err
 	return value, err
 }
 
-// AddCounter увеличивает значение counter без повторов на уровне адаптера.
+// AddCounter увеличивает значение counter.
 func (a *PostgresAdapter) AddCounter(ctx context.Context, id string, newCounter int64) {
-	a.repo.AddCounter(ctx, id, newCounter)
+	a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
+		a.repo.AddCounter(ctx, id, newCounter)
+		return nil
+	})
 }
 
-// AddCounterValue добавляет значение delta без повторов на уровне адаптера.
+// AddCounterValue увеличивает значение counter на delta.
 func (a *PostgresAdapter) AddCounterValue(ctx context.Context, id string, delta int64) {
-	a.repo.AddCounterValue(ctx, id, delta)
+	a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
+		a.repo.AddCounterValue(ctx, id, delta)
+		return nil
+	})
 }
 
-// BatchUpdate выполняет пакет обновлений с повторными попытками для Class 08 ошибок.
+// BatchUpdate выполняет пакетное обновление метрик.
 func (a *PostgresAdapter) BatchUpdate(ctx context.Context, metrics []models.Metrics) error {
 	return a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
 		return a.repo.BatchUpdate(ctx, metrics)
 	})
 }
 
-// AllCounters возвращает список counter метрик из исходного репозитория.
+// AllCounters возвращает список counter метрик.
 func (a *PostgresAdapter) AllCounters(ctx context.Context) []models.Metrics {
 	return a.repo.AllCounters(ctx)
 }
 
-// AllGauges возвращает список gauge метрик из исходного репозитория.
+// AllGauges возвращает список gauge метрик.
 func (a *PostgresAdapter) AllGauges(ctx context.Context) []models.Metrics {
 	return a.repo.AllGauges(ctx)
 }
 
-// Ping выполняет проверку соединения с базой данных с повторными попытками.
+// Ping проверяет соединение с базой данных.
 func (a *PostgresAdapter) Ping(ctx context.Context) error {
 	return a.strategy.DoWithRetry(ctx, func(ctx context.Context) error {
 		return a.repo.Ping(ctx)

@@ -1,0 +1,42 @@
+{
+  "name": "metrics-collection-service DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/go:1.25-bookworm",
+  "containerEnv": {
+    "GOTOOLCHAIN": "auto"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/git-lfs:1.2.5": {}
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "golang.go",
+        "ms-azuretools.vscode-docker",
+        "DavidAnson.vscode-markdownlint",
+        "cweijan.vscode-database-client2"
+      ]
+    }
+  },
+  "forwardPorts": [8080, 8081, 5432],
+  "portsAttributes": {
+    "8080": {
+      "label": "Metrics API",
+      "onAutoForward": "notify"
+    },
+    "8081": {
+      "label": "Adminer",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "make install-deps"
+}
+

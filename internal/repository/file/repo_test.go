@@ -1,4 +1,4 @@
-package repository
+package file_test
 
 import (
 	"context"
@@ -7,20 +7,21 @@ import (
 	"testing"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileStorage_SaveAndLoad(t *testing.T) {
+func TestRepository_SaveAndLoad(t *testing.T) {
 	tmpFile := "/tmp/test-metrics-db.json"
 	defer os.Remove(tmpFile)
 
 	logger := zerolog.Nop()
 
-	fileStorage, err := NewFileStorage(
+	fileRepo, err := file.NewRepository(
 		context.Background(),
-		FileStorageConfig{
+		file.Config{
 			FilePath:             tmpFile,
 			StoreIntervalSeconds: 0,
 			Restore:              false,
@@ -31,15 +32,15 @@ func TestFileStorage_SaveAndLoad(t *testing.T) {
 
 	ctx := context.Background()
 
-	fileStorage.UpdateGauge(ctx, "testGauge", 42.5)
-	fileStorage.AddCounter(ctx, "testCounter", 10)
+	fileRepo.UpdateGauge(ctx, "testGauge", 42.5)
+	fileRepo.AddCounter(ctx, "testCounter", 10)
 
-	err = fileStorage.Close()
+	err = fileRepo.Close()
 	require.NoError(t, err)
 
-	newFileStorage, err := NewFileStorage(
+	newFileRepo, err := file.NewRepository(
 		context.Background(),
-		FileStorageConfig{
+		file.Config{
 			FilePath:             tmpFile,
 			StoreIntervalSeconds: 0,
 			Restore:              true,
@@ -47,26 +48,26 @@ func TestFileStorage_SaveAndLoad(t *testing.T) {
 		logger,
 	)
 	require.NoError(t, err)
-	defer newFileStorage.Close()
+	defer newFileRepo.Close()
 
-	gauge, err := newFileStorage.GetGauge(ctx, "testGauge")
+	gauge, err := newFileRepo.GetGauge(ctx, "testGauge")
 	require.NoError(t, err)
 	assert.Equal(t, 42.5, gauge)
 
-	counter, err := newFileStorage.GetCounter(ctx, "testCounter")
+	counter, err := newFileRepo.GetCounter(ctx, "testCounter")
 	require.NoError(t, err)
 	assert.Equal(t, int64(10), counter)
 }
 
-func TestFileStorage_FileFormat(t *testing.T) {
+func TestRepository_FileFormat(t *testing.T) {
 	tmpFile := "/tmp/test-metrics-format.json"
 	defer os.Remove(tmpFile)
 
 	logger := zerolog.Nop()
 
-	fileStorage, err := NewFileStorage(
+	fileRepo, err := file.NewRepository(
 		context.Background(),
-		FileStorageConfig{
+		file.Config{
 			FilePath:             tmpFile,
 			StoreIntervalSeconds: 1,
 			Restore:              false,
@@ -77,10 +78,10 @@ func TestFileStorage_FileFormat(t *testing.T) {
 
 	ctx := context.Background()
 
-	fileStorage.UpdateGauge(ctx, "LastGC", 1257894000000000000)
-	fileStorage.AddCounter(ctx, "NumGC", 42)
+	fileRepo.UpdateGauge(ctx, "LastGC", 1257894000000000000)
+	fileRepo.AddCounter(ctx, "NumGC", 42)
 
-	err = fileStorage.Close()
+	err = fileRepo.Close()
 	require.NoError(t, err)
 
 	data, err := os.ReadFile(tmpFile)

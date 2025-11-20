@@ -8,8 +8,11 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/config"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
+	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
+	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
 )
@@ -18,9 +21,11 @@ import (
 type handlers struct {
 	update     *update.UpdateHandler
 	updateJSON *update.UpdateJSONHandler
+	updates    *updates.UpdatesHandler
 	get        *get.GetHandler
 	getJSON    *get.GetJSONHandler
 	html       *html.HTMLHandler
+	ping       *ping.PingHandler
 }
 
 // ServerApp представляет основное серверное приложение со всеми зависимостями
@@ -28,7 +33,7 @@ type ServerApp struct {
 	Cfg      *config.ServerConfig
 	handlers *handlers
 	server   *http.Server
-	storage  repository.MemStorage
+	storage  repository.MetricStorage
 	logger   zerolog.Logger
 }
 
@@ -42,23 +47,18 @@ func New(ctx context.Context) *ServerApp {
 		Logger().
 		Level(zerolog.InfoLevel)
 
-	storage, err := repository.NewFileStorage(
-		ctx,
-		repository.FileStorageConfig{
-			FilePath:             cfg.FileStoragePath,
-			StoreIntervalSeconds: cfg.StoreInterval,
-			Restore:              cfg.Restore,
-		},
-		logger,
-	)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to create file storage")
-	}
 	logger.Info().
-		Str("file", cfg.FileStoragePath).
-		Int("interval", cfg.StoreInterval).
+		Str("address", cfg.Address).
+		Int("store_interval", cfg.StoreInterval).
+		Str("file_storage_path", cfg.FileStoragePath).
 		Bool("restore", cfg.Restore).
-		Msg("file storage initialized")
+		Str("db_dsn", cfg.DatabaseConfig.Dsn).
+		Msg("server configuration loaded")
+
+	storage, err := createStorage(ctx, cfg, logger)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to initialize storage")
+	}
 
 	app := &ServerApp{
 		Cfg:     cfg,
@@ -67,9 +67,11 @@ func New(ctx context.Context) *ServerApp {
 		handlers: &handlers{
 			update:     update.NewUpdateHandler(storage),
 			updateJSON: update.NewUpdateJSONHandler(storage),
+			updates:    updates.NewUpdatesHandler(storage),
 			get:        get.NewGetHandler(storage),
 			getJSON:    get.NewGetJSONHandler(storage),
 			html:       html.NewHTMLHandler(storage),
+			ping:       ping.NewPingHandler(storage),
 		},
 	}
 
@@ -95,9 +97,11 @@ func (a *ServerApp) setupRouter() {
 
 	router.Handle(`POST /update`, a.handlers.updateJSON)
 	router.Handle(`POST /update/`, a.handlers.updateJSON)
+	router.Handle(`POST /updates`, a.handlers.updates)
+	router.Handle(`POST /updates/`, a.handlers.updates)
 	router.Handle(`POST /value`, a.handlers.getJSON)
 	router.Handle(`POST /value/`, a.handlers.getJSON)
-
+	router.Handle(`GET /ping`, a.handlers.ping)
 	router.Handle(`GET /`, a.handlers.html)
 
 	a.server = &http.Server{
@@ -126,7 +130,7 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		a.logger.Error().Err(err).Msg("error shutting down server")
 	}
 
-	if fileStorage, ok := a.storage.(*repository.FileStorage); ok {
+	if fileStorage, ok := a.storage.(*file.Repository); ok {
 		if err := fileStorage.Close(); err != nil {
 			return err
 		}

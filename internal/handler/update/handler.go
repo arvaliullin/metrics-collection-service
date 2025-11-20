@@ -17,10 +17,10 @@ var (
 )
 
 type UpdateHandler struct {
-	memStorage repository.MemStorage
+	memStorage repository.MetricStorage
 }
 
-func NewUpdateHandler(memStorage repository.MemStorage) *UpdateHandler {
+func NewUpdateHandler(memStorage repository.MetricStorage) *UpdateHandler {
 	return &UpdateHandler{
 		memStorage: memStorage,
 	}

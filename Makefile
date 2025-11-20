@@ -12,6 +12,15 @@ run:
 test:
 	- go test ./...
 
+.PHONY: install-deps
+install-deps:
+	- go install github.com/golang/mock/mockgen@v1.6.0
+	- go install github.com/pressly/goose/v3/cmd/goose@latest
+
+.PHONY: generate-mocks
+generate-mocks:
+	go generate ./...
+
 .PHONY: fmt
 fmt:
 	- go fmt ./...
@@ -52,3 +61,11 @@ prune: down
 	- docker volume prune -f
 	- docker network prune -f
 	- docker system prune -a --volumes -f
+
+.PHONY: logs
+logs:
+	- docker-compose logs
+
+.PHONY: migration-create
+migration-create:
+	goose -dir migrations -s create create_metrics sql

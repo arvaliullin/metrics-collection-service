@@ -2,7 +2,6 @@ package get_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +9,8 @@ import (
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +27,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 		method      string
 		target      string
 		body        models.Metrics
-		setup       func(repository.MemStorage)
+		setup       func(*repomock.MockMetricStorage)
 		want        want
 		invalidJSON bool
 	}{
@@ -39,8 +39,8 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				MType: "gauge",
 			},
-			setup: func(ms repository.MemStorage) {
-				ms.UpdateGauge(context.TODO(), "someMetric", 3.14)
+			setup: func(ms *repomock.MockMetricStorage) {
+				ms.EXPECT().GetGauge(gomock.Any(), "someMetric").Return(3.14, nil)
 			},
 			want: want{
 				code:        http.StatusOK,
@@ -60,8 +60,8 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "counterMetric",
 				MType: "counter",
 			},
-			setup: func(ms repository.MemStorage) {
-				ms.AddCounter(context.TODO(), "counterMetric", 42)
+			setup: func(ms *repomock.MockMetricStorage) {
+				ms.EXPECT().GetCounter(gomock.Any(), "counterMetric").Return(int64(42), nil)
 			},
 			want: want{
 				code:        http.StatusOK,
@@ -81,7 +81,6 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				MType: "gauge",
 			},
-			setup: func(ms repository.MemStorage) {},
 			want: want{
 				code: http.StatusMethodNotAllowed,
 				body: get.ErrMethodNotAllowed.Error(),
@@ -94,7 +93,6 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 			body: models.Metrics{
 				MType: "gauge",
 			},
-			setup: func(ms repository.MemStorage) {},
 			want: want{
 				code: http.StatusBadRequest,
 				body: get.ErrMissingID.Error(),
@@ -107,7 +105,6 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 			body: models.Metrics{
 				ID: "someMetric",
 			},
-			setup: func(ms repository.MemStorage) {},
 			want: want{
 				code: http.StatusBadRequest,
 				body: get.ErrMissingType.Error(),
@@ -121,7 +118,9 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "nonexistent",
 				MType: "gauge",
 			},
-			setup: func(ms repository.MemStorage) {},
+			setup: func(ms *repomock.MockMetricStorage) {
+				ms.EXPECT().GetGauge(gomock.Any(), "nonexistent").Return(0.0, get.ErrNotFound)
+			},
 			want: want{
 				code: http.StatusNotFound,
 				body: get.ErrNotFound.Error(),
@@ -135,7 +134,9 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "nonexistent",
 				MType: "counter",
 			},
-			setup: func(ms repository.MemStorage) {},
+			setup: func(ms *repomock.MockMetricStorage) {
+				ms.EXPECT().GetCounter(gomock.Any(), "nonexistent").Return(int64(0), get.ErrNotFound)
+			},
 			want: want{
 				code: http.StatusNotFound,
 				body: get.ErrNotFound.Error(),
@@ -149,7 +150,6 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				MType: "invalid_type",
 			},
-			setup: func(ms repository.MemStorage) {},
 			want: want{
 				code: http.StatusBadRequest,
 				body: get.ErrInvalidMetricType.Error(),
@@ -163,7 +163,6 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				MType: "gauge",
 			},
-			setup: func(ms repository.MemStorage) {},
 			want: want{
 				code: http.StatusBadRequest,
 				body: get.ErrInvalidJSON.Error(),
@@ -174,8 +173,13 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage := repository.NewEmptyMemStorage()
-			tt.setup(storage)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			storage := repomock.NewMockMetricStorage(ctrl)
+			if tt.setup != nil {
+				tt.setup(storage)
+			}
 
 			var body *bytes.Reader
 			if tt.invalidJSON {

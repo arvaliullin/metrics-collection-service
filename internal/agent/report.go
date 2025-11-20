@@ -6,151 +6,120 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/go-resty/resty/v2"
 )
 
-// compressMetric сжимает метрики
-func compressMetric(metric models.Metrics) (io.Reader, error) {
-	jsonData, err := json.Marshal(metric)
-
+// compressMetricsBatch сериализует и сжимает список метрик.
+func compressMetricsBatch(metrics []models.Metrics) ([]byte, error) {
+	jsonData, err := json.Marshal(metrics)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при сериализации метрики в JSON: %w", err)
+		return nil, fmt.Errorf("ошибка при сериализации метрик в JSON: %w", err)
 	}
 
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
-	defer gz.Close()
 
 	if _, err := gz.Write(jsonData); err != nil {
-		return nil, fmt.Errorf("ошибка при сжатии метрики %w", err)
+		gz.Close()
+		return nil, fmt.Errorf("ошибка при сжатии батча метрик: %w", err)
 	}
 
-	return &buf, nil
+	if err := gz.Close(); err != nil {
+		return nil, fmt.Errorf("ошибка при закрытии gzip писателя: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
-// sendCounters передает метрики типа Counter средствами клиента http
-func (a *Agent) sendCounters(ctx context.Context) {
-	for _, value := range a.metricsStorage.AllCounters(ctx) {
-		var delta int64
-		if value.Delta != nil {
-			delta = *value.Delta
-		} else if value.Value != nil {
-			delta = int64(*value.Value)
-		}
+func (a *Agent) buildBatch(ctx context.Context) []models.Metrics {
+	gauges := a.metricsStorage.AllGauges(ctx)
+	counters := a.metricsStorage.AllCounters(ctx)
 
-		metric := models.Metrics{
-			ID:    value.ID,
-			MType: models.Counter,
-			Delta: &delta,
-		}
+	if len(gauges) == 0 && len(counters) == 0 {
+		return nil
+	}
 
-		compressedBody, err := compressMetric(metric)
-		if err != nil {
-			a.logger.Error().
-				Err(err).
-				Str("method", "sendCounters").
-				Str("metric", value.ID).
-				Msg("failed to compress counter")
-			continue
-		}
+	batch := make([]models.Metrics, 0, len(gauges)+len(counters))
+	batch = append(batch, gauges...)
+	batch = append(batch, counters...)
 
-		requestURL, err := url.JoinPath(a.cfg.GetAddress(), "/update")
-		if err != nil {
-			a.logger.Error().
-				Err(err).
-				Str("method", "sendCounters").
-				Str("metric", value.ID).
-				Str("address", a.cfg.GetAddress()).
-				Msg("failed to join URL path")
-			continue
-		}
+	return batch
+}
 
-		resp, err := a.client.R().
+func (a *Agent) resetCounters(ctx context.Context, metrics []models.Metrics) {
+	for _, metric := range metrics {
+		if metric.MType == models.Counter {
+			a.metricsStorage.ResetCounter(ctx, metric.ID)
+		}
+	}
+}
+
+func (a *Agent) sendBatch(ctx context.Context) {
+	metrics := a.buildBatch(ctx)
+	if len(metrics) == 0 {
+		return
+	}
+
+	compressedBody, err := compressMetricsBatch(metrics)
+	if err != nil {
+		a.logger.Error().
+			Err(err).
+			Str("method", "sendBatch").
+			Int("metrics_count", len(metrics)).
+			Msg("failed to compress metrics batch")
+		return
+	}
+
+	requestURL, err := url.JoinPath(a.cfg.GetAddress(), "/updates")
+	if err != nil {
+		a.logger.Error().
+			Err(err).
+			Str("method", "sendBatch").
+			Str("address", a.cfg.GetAddress()).
+			Msg("failed to join URL path")
+		return
+	}
+
+	var resp *resty.Response
+	err = a.retryStrategy.DoWithRetry(ctx, func(ctx context.Context) error {
+		var reqErr error
+		resp, reqErr = a.client.R().
+			SetContext(ctx).
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader("Accept-Encoding", "gzip").
 			SetBody(compressedBody).
 			Post(requestURL)
-		if err != nil {
-			a.logger.Error().
-				Err(err).
-				Str("method", "sendCounters").
-				Str("metric", value.ID).
-				Msg("failed to send counter")
-			continue
-		}
-
-		a.logger.Info().
-			Str("method", "sendCounters").
-			Str("metric", value.ID).
-			Int("status", resp.StatusCode()).
-			Msg("counter sent successfully")
-
-		if resp.StatusCode() == http.StatusOK {
-			a.metricsStorage.ResetCounter(ctx, value.ID)
-		}
+		return reqErr
+	})
+	if err != nil {
+		a.logger.Error().
+			Err(err).
+			Str("method", "sendBatch").
+			Int("metrics_count", len(metrics)).
+			Msg("failed to send metrics batch after retries")
+		return
 	}
-}
 
-func (a *Agent) sendGauges(ctx context.Context) {
-	for _, value := range a.metricsStorage.AllGauges(ctx) {
-		if value.Value == nil {
-			continue
-		}
-
-		metric := models.Metrics{
-			ID:    value.ID,
-			MType: models.Gauge,
-			Value: value.Value,
-		}
-
-		compressedMetric, err := compressMetric(metric)
-		if err != nil {
-			a.logger.Error().
-				Err(err).
-				Str("method", "sendGauges").
-				Str("metric", value.ID).
-				Msg("failed to compress gauge")
-			continue
-		}
-
-		requestURL, err := url.JoinPath(a.cfg.GetAddress(), "/update")
-		if err != nil {
-			a.logger.Error().
-				Err(err).
-				Str("method", "sendGauges").
-				Str("metric", value.ID).
-				Str("address", a.cfg.GetAddress()).
-				Msg("failed to join URL path")
-			continue
-		}
-
-		resp, err := a.client.R().
-			SetHeader("Content-Type", "application/json").
-			SetHeader("Content-Encoding", "gzip").
-			SetHeader("Accept-Encoding", "gzip").
-			SetBody(compressedMetric).
-			Post(requestURL)
-		if err != nil {
-			a.logger.Error().
-				Err(err).
-				Str("method", "sendGauges").
-				Str("metric", value.ID).
-				Msg("failed to send gauge")
-			continue
-		}
-
+	if resp.StatusCode() == http.StatusOK {
+		a.resetCounters(ctx, metrics)
 		a.logger.Info().
-			Str("method", "sendGauges").
-			Str("metric", value.ID).
-			Int("status", resp.StatusCode()).
-			Msg("gauge sent successfully")
+			Str("method", "sendBatch").
+			Int("metrics_count", len(metrics)).
+			Msg("metrics batch sent successfully")
+		return
 	}
+
+	a.logger.Warn().
+		Str("method", "sendBatch").
+		Int("metrics_count", len(metrics)).
+		Int("status", resp.StatusCode()).
+		Msg("server returned non-OK status for metrics batch")
 }
 
 func (a *Agent) Report(ctx context.Context) {
@@ -159,8 +128,7 @@ func (a *Agent) Report(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-time.After(a.cfg.GetReportInterval()):
-			a.sendCounters(ctx)
-			a.sendGauges(ctx)
+			a.sendBatch(ctx)
 		}
 	}
 }

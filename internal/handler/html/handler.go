@@ -11,11 +11,11 @@ import (
 
 // HTMLHandler обрабатывает GET-запрос и возвращает HTML-страницу со списком метрик.
 type HTMLHandler struct {
-	memStorage repository.MemStorage
+	memStorage repository.MetricStorage
 }
 
 // NewHTMLHandler создает обработчик HTML-страницы со списком метрик.
-func NewHTMLHandler(memStorage repository.MemStorage) *HTMLHandler {
+func NewHTMLHandler(memStorage repository.MetricStorage) *HTMLHandler {
 	return &HTMLHandler{memStorage: memStorage}
 }
 
@@ -38,8 +38,8 @@ func (h *HTMLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	renderSection(&b, "Counter", func(w io.StringWriter) {
 		for _, m := range counters {
 			renderRow(w, m.ID, func(w io.StringWriter) {
-				if m.Value != nil {
-					w.WriteString(strconv.FormatInt(int64(*m.Value), 10))
+				if m.Delta != nil {
+					w.WriteString(strconv.FormatInt(*m.Delta, 10))
 				}
 			})
 		}

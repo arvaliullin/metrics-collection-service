@@ -15,10 +15,10 @@ var (
 )
 
 type GetHandler struct {
-	memStorage repository.MemStorage
+	memStorage repository.MetricStorage
 }
 
-func NewGetHandler(memStorage repository.MemStorage) *GetHandler {
+func NewGetHandler(memStorage repository.MetricStorage) *GetHandler {
 	return &GetHandler{memStorage: memStorage}
 }
 

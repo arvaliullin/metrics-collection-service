@@ -17,10 +17,10 @@ var (
 )
 
 type GetJSONHandler struct {
-	memStorage repository.MemStorage
+	memStorage repository.MetricStorage
 }
 
-func NewGetJSONHandler(memStorage repository.MemStorage) *GetJSONHandler {
+func NewGetJSONHandler(memStorage repository.MetricStorage) *GetJSONHandler {
 	return &GetJSONHandler{memStorage: memStorage}
 }
 

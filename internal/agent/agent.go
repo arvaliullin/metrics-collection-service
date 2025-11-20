@@ -5,15 +5,18 @@ import (
 	"os"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
+	retryutil "github.com/arvaliullin/metrics-collection-service/internal/utils/retry"
 	"github.com/go-resty/resty/v2"
 	"github.com/rs/zerolog"
 )
 
 type Agent struct {
 	client         *resty.Client
-	metricsStorage repository.MemStorage
+	metricsStorage repository.MetricStorage
 	cfg            *Config
 	logger         zerolog.Logger
+	retryStrategy  *retryutil.Strategy
 }
 
 func New(ctx context.Context) *Agent {
@@ -25,11 +28,23 @@ func New(ctx context.Context) *Agent {
 
 	client := resty.New()
 
+	cfg := loadConfig()
+
+	logger.Info().
+		Int("poll_interval", cfg.PollInterval).
+		Int("report_interval", cfg.ReportInterval).
+		Str("address", cfg.Address).
+		Msg("agent configuration loaded")
+
 	return &Agent{
 		client:         client,
-		metricsStorage: repository.NewEmptyMemStorage(),
-		cfg:            loadConfig(),
+		metricsStorage: memory.NewRepository(),
+		cfg:            cfg,
 		logger:         logger,
+		retryStrategy: retryutil.NewStrategy(
+			retryutil.DefaultDelays,
+			networkRetryPredicate,
+		),
 	}
 }
 

@@ -20,10 +20,10 @@ var (
 )
 
 type UpdateJSONHandler struct {
-	memStorage repository.MemStorage
+	memStorage repository.MetricStorage
 }
 
-func NewUpdateJSONHandler(memStorage repository.MemStorage) *UpdateJSONHandler {
+func NewUpdateJSONHandler(memStorage repository.MetricStorage) *UpdateJSONHandler {
 	return &UpdateJSONHandler{
 		memStorage: memStorage,
 	}

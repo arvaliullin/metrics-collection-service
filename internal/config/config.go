@@ -13,6 +13,7 @@ type ServerConfig struct {
 	StoreInterval   int            `envconfig:"STORE_INTERVAL" default:"300"`
 	FileStoragePath string         `envconfig:"FILE_STORAGE_PATH" default:"/tmp/metrics-db.json"`
 	Restore         bool           `envconfig:"RESTORE" default:"false"`
+	Key             string         `envconfig:"KEY"`
 	DatabaseConfig  PostgresConfig `envconfig:"DATABASE"`
 }
 
@@ -36,6 +37,9 @@ func LoadConfig() *ServerConfig {
 
 	var flagRestore bool
 	flag.BoolVar(&flagRestore, "r", false, "загружать данные из файла при старте")
+
+	var flagKey string
+	flag.StringVar(&flagKey, "k", "", "ключ")
 
 	var flagDsn string
 	flag.StringVar(&flagDsn, "d", "", "строка подключения к БД")
@@ -62,6 +66,10 @@ func LoadConfig() *ServerConfig {
 
 	if flagDsn != "" {
 		cfg.DatabaseConfig.Dsn = flagDsn
+	}
+
+	if flagKey != "" {
+		cfg.Key = flagKey
 	}
 
 	if args := flag.Args(); len(args) > 0 {

@@ -57,7 +57,9 @@ func LoadConfig() *ServerConfig {
 		case "d":
 			cfg.DatabaseConfig.Dsn = flagDsn
 		case "k":
-			cfg.Key = flagKey
+			if cfg.Key == "" {
+				cfg.Key = flagKey
+			}
 		case "r":
 			cfg.Restore = flagRestore
 		}

@@ -59,7 +59,9 @@ func loadConfig() *Config {
 		case "a":
 			cfg.Address = flagAddress
 		case "k":
-			cfg.Key = flagKey
+			if cfg.Key == "" {
+				cfg.Key = flagKey
+			}
 		}
 	})
 

@@ -34,6 +34,7 @@ func New(ctx context.Context) *Agent {
 		Int("poll_interval", cfg.PollInterval).
 		Int("report_interval", cfg.ReportInterval).
 		Str("address", cfg.Address).
+		Str("key", cfg.Key).
 		Msg("agent configuration loaded")
 
 	return &Agent{

@@ -53,6 +53,7 @@ func New(ctx context.Context) *ServerApp {
 		Str("file_storage_path", cfg.FileStoragePath).
 		Bool("restore", cfg.Restore).
 		Str("db_dsn", cfg.DatabaseConfig.Dsn).
+		Str("key", cfg.Key).
 		Msg("server configuration loaded")
 
 	storage, err := createStorage(ctx, cfg, logger)

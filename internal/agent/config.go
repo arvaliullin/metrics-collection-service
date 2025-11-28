@@ -46,14 +46,22 @@ func loadConfig() *Config {
 	flag.IntVar(&flagPollInterval, "p", cfg.PollInterval, "частота опроса метрик")
 	flag.IntVar(&flagReportInterval, "r", cfg.ReportInterval, "частота отправки метрик на сервер")
 	flag.StringVar(&flagAddress, "a", cfg.Address, "адрес и порт HTTP-сервера")
-	flag.StringVar(&flagKey, "k", cfg.Key, "ключ")
+	flag.StringVar(&flagKey, "k", "", "ключ")
 
 	flag.Parse()
 
-	cfg.PollInterval = flagPollInterval
-	cfg.ReportInterval = flagReportInterval
-	cfg.Address = flagAddress
-	cfg.Key = flagKey
+	flag.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "p":
+			cfg.PollInterval = flagPollInterval
+		case "r":
+			cfg.ReportInterval = flagReportInterval
+		case "a":
+			cfg.Address = flagAddress
+		case "k":
+			cfg.Key = flagKey
+		}
+	})
 
 	if args := flag.Args(); len(args) > 0 {
 		fmt.Fprintf(os.Stderr, "неизвестные аргументы: %v\n", args)

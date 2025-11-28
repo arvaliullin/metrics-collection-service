@@ -47,30 +47,21 @@ func LoadConfig() *ServerConfig {
 	flag.Parse()
 
 	flag.Visit(func(f *flag.Flag) {
-		if f.Name == "r" {
+		switch f.Name {
+		case "a":
+			cfg.Address = flagAddress
+		case "i":
+			cfg.StoreInterval = flagStoreInterval
+		case "f":
+			cfg.FileStoragePath = flagFileStoragePath
+		case "d":
+			cfg.DatabaseConfig.Dsn = flagDsn
+		case "k":
+			cfg.Key = flagKey
+		case "r":
 			cfg.Restore = flagRestore
 		}
 	})
-
-	if flagAddress != "" {
-		cfg.Address = flagAddress
-	}
-
-	if flagStoreInterval >= 0 {
-		cfg.StoreInterval = flagStoreInterval
-	}
-
-	if flagFileStoragePath != "" {
-		cfg.FileStoragePath = flagFileStoragePath
-	}
-
-	if flagDsn != "" {
-		cfg.DatabaseConfig.Dsn = flagDsn
-	}
-
-	if flagKey != "" {
-		cfg.Key = flagKey
-	}
 
 	if args := flag.Args(); len(args) > 0 {
 		fmt.Fprintf(os.Stderr, "неизвестные аргументы: %v\n", args)

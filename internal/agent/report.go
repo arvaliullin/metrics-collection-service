@@ -11,6 +11,7 @@ import (
 	"time"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -88,13 +89,22 @@ func (a *Agent) sendBatch(ctx context.Context) {
 	var resp *resty.Response
 	err = a.retryStrategy.DoWithRetry(ctx, func(ctx context.Context) error {
 		var reqErr error
-		resp, reqErr = a.client.R().
+		req := a.client.R().
 			SetContext(ctx).
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader("Accept-Encoding", "gzip").
-			SetBody(compressedBody).
-			Post(requestURL)
+			SetBody(compressedBody)
+
+		if a.cfg.Key != "" {
+			hash256, hashErr := utils.Hash(compressedBody, a.cfg.Key)
+			if hashErr != nil {
+				return hashErr
+			}
+			req.SetHeader("HashSHA256", fmt.Sprintf("%x", hash256))
+		}
+
+		resp, reqErr = req.Post(requestURL)
 		return reqErr
 	})
 	if err != nil {

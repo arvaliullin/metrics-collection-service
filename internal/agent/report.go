@@ -60,8 +60,7 @@ func (a *Agent) resetCounters(ctx context.Context, metrics []models.Metrics) {
 	}
 }
 
-func (a *Agent) sendBatch(ctx context.Context) {
-	metrics := a.buildBatch(ctx)
+func (a *Agent) processBatch(ctx context.Context, metrics []models.Metrics) {
 	if len(metrics) == 0 {
 		return
 	}
@@ -70,7 +69,7 @@ func (a *Agent) sendBatch(ctx context.Context) {
 	if err != nil {
 		a.logger.Error().
 			Err(err).
-			Str("method", "sendBatch").
+			Str("method", "processBatch").
 			Int("metrics_count", len(metrics)).
 			Msg("failed to compress metrics batch")
 		return
@@ -80,7 +79,7 @@ func (a *Agent) sendBatch(ctx context.Context) {
 	if err != nil {
 		a.logger.Error().
 			Err(err).
-			Str("method", "sendBatch").
+			Str("method", "processBatch").
 			Str("address", a.cfg.GetAddress()).
 			Msg("failed to join URL path")
 		return
@@ -110,7 +109,7 @@ func (a *Agent) sendBatch(ctx context.Context) {
 	if err != nil {
 		a.logger.Error().
 			Err(err).
-			Str("method", "sendBatch").
+			Str("method", "processBatch").
 			Int("metrics_count", len(metrics)).
 			Msg("failed to send metrics batch after retries")
 		return
@@ -119,26 +118,34 @@ func (a *Agent) sendBatch(ctx context.Context) {
 	if resp.StatusCode() == http.StatusOK {
 		a.resetCounters(ctx, metrics)
 		a.logger.Info().
-			Str("method", "sendBatch").
+			Str("method", "processBatch").
 			Int("metrics_count", len(metrics)).
 			Msg("metrics batch sent successfully")
 		return
 	}
 
 	a.logger.Warn().
-		Str("method", "sendBatch").
+		Str("method", "processBatch").
 		Int("metrics_count", len(metrics)).
 		Int("status", resp.StatusCode()).
 		Msg("server returned non-OK status for metrics batch")
 }
 
-func (a *Agent) Report(ctx context.Context) {
+func (a *Agent) Report(ctx context.Context, jobs chan<- MetricsBatch) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(a.cfg.GetReportInterval()):
-			a.sendBatch(ctx)
+			metrics := a.buildBatch(ctx)
+			if len(metrics) == 0 {
+				continue
+			}
+			select {
+			case jobs <- MetricsBatch{Metrics: metrics}:
+			case <-ctx.Done():
+				return
+			}
 		}
 	}
 }

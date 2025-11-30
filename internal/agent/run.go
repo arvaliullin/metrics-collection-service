@@ -7,9 +7,17 @@ import (
 
 func (a *Agent) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
-	wg.Add(2)
+	var workersWg sync.WaitGroup
 
-	a.logger.Info().Msg("starting agent")
+	jobs := make(chan MetricsBatch, 10)
+
+	a.logger.Info().
+		Int("rate_limit", a.cfg.RateLimit).
+		Msg("starting agent with worker pool")
+
+	a.startWorkerPool(ctx, jobs, &workersWg)
+
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
@@ -18,12 +26,22 @@ func (a *Agent) Run(ctx context.Context) error {
 
 	go func() {
 		defer wg.Done()
-		a.Report(ctx)
+		a.PollGopsutil(ctx)
+	}()
+
+	go func() {
+		defer wg.Done()
+		a.Report(ctx, jobs)
 	}()
 
 	<-ctx.Done()
 	a.logger.Info().Msg("shutting down agent")
 
 	wg.Wait()
+
+	close(jobs)
+
+	workersWg.Wait()
+
 	return nil
 }

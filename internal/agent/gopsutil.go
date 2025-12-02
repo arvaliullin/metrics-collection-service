@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -23,7 +22,6 @@ func (a *Agent) collectGopsutilMetrics(ctx context.Context) {
 		a.metricsStorage.UpdateGauge(ctx, "FreeMemory", float64(vmStat.Free))
 	}
 
-	cpuCount := runtime.NumCPU()
 	cpuPercents, err := cpu.PercentWithContext(ctx, 0, true)
 	if err != nil {
 		a.logger.Error().
@@ -31,9 +29,9 @@ func (a *Agent) collectGopsutilMetrics(ctx context.Context) {
 			Str("method", "collectGopsutilMetrics").
 			Msg("failed to get CPU utilization")
 	} else {
-		for i := 0; i < cpuCount && i < len(cpuPercents); i++ {
+		for i, percent := range cpuPercents {
 			metricName := fmt.Sprintf("CPUutilization%d", i+1)
-			a.metricsStorage.UpdateGauge(ctx, metricName, cpuPercents[i])
+			a.metricsStorage.UpdateGauge(ctx, metricName, percent)
 		}
 	}
 }

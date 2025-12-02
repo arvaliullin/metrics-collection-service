@@ -42,7 +42,7 @@ func HashValidationMiddleware(key string, logger zerolog.Logger) func(http.Handl
 			computedHash, err := utils.Hash(body, key)
 			if err != nil {
 				logger.Error().Err(err).Msg("failed to compute hash")
-				http.Error(w, "failed to compute hash", http.StatusInternalServerError)
+				http.Error(w, "failed to compute hash", http.StatusBadRequest)
 				return
 			}
 
@@ -53,7 +53,7 @@ func HashValidationMiddleware(key string, logger zerolog.Logger) func(http.Handl
 					Str("received", receivedHash).
 					Str("computed", computedHashHex).
 					Msg("hash mismatch")
-				http.Error(w, "hash mismatch", http.StatusBadRequest)
+				http.Error(w, "hash mismatch", http.StatusForbidden)
 				return
 			}
 

@@ -48,7 +48,11 @@ up:
 
 .PHONY: pprof
 pprof:
-	go tool pprof -http=":9090" -seconds=30 http://localhost:8080/debug/pprof/profile
+	go tool pprof -http=":9090" -seconds=600 http://localhost:8080/debug/pprof/profile
+
+.PHONY: godoc
+godoc:
+	godoc -http=:6060 -play
 
 .PHONY: down
 down:

@@ -1,4 +1,18 @@
 basePath: /
+definitions:
+  models.Metrics:
+    properties:
+      delta:
+        type: integer
+      hash:
+        type: string
+      id:
+        type: string
+      type:
+        type: string
+      value:
+        type: number
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -21,4 +35,110 @@ paths:
       summary: Проверка доступности базы данных
       tags:
       - health
+  /update:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет значение метрики (gauge или counter) в формате JSON
+      parameters:
+      - description: Метрика для обновления
+        in: body
+        name: metric
+        required: true
+        schema:
+          $ref: '#/definitions/models.Metrics'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная метрика
+          schema:
+            type: object
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "404":
+          description: Метрика не найдена
+          schema:
+            type: string
+        "405":
+          description: Метод не поддерживается
+          schema:
+            type: string
+      summary: Обновление метрики
+      tags:
+      - metrics
+  /updates:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет несколько метрик за один запрос в формате JSON
+      parameters:
+      - description: Массив метрик для обновления
+        in: body
+        name: metrics
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.Metrics'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленные метрики
+          schema:
+            items:
+              type: object
+            type: array
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "405":
+          description: Метод не поддерживается
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Пакетное обновление метрик
+      tags:
+      - metrics
+  /value:
+    post:
+      consumes:
+      - application/json
+      description: Получает значение метрики (gauge или counter) в формате JSON
+      parameters:
+      - description: Метрика для получения
+        in: body
+        name: metric
+        required: true
+        schema:
+          $ref: '#/definitions/models.Metrics'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Метрика с текущим значением
+          schema:
+            type: object
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "404":
+          description: Метрика не найдена
+          schema:
+            type: string
+        "405":
+          description: Метод не поддерживается
+          schema:
+            type: string
+      summary: Получение метрики
+      tags:
+      - metrics
 swagger: "2.0"

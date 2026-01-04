@@ -34,6 +34,17 @@ func NewUpdateJSONHandler(memStorage repository.MetricStorage, auditNotifier *au
 	}
 }
 
+// @Summary Обновление метрики
+// @Description Обновляет значение метрики (gauge или counter) в формате JSON
+// @Tags metrics
+// @Accept json
+// @Produce json
+// @Param metric body models.Metrics true "Метрика для обновления" example({"id":"Alloc","type":"gauge","value":1024000.0})
+// @Success 200 {object} object "Обновленная метрика"
+// @Failure 400 {string} string "Некорректный запрос"
+// @Failure 404 {string} string "Метрика не найдена"
+// @Failure 405 {string} string "Метод не поддерживается"
+// @Router /update [post]
 func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, ErrMethodNotSupported.Error(), http.StatusMethodNotAllowed)

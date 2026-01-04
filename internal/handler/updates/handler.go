@@ -37,6 +37,17 @@ func NewUpdatesHandler(memStorage repository.MetricStorage, auditNotifier *audit
 	}
 }
 
+// @Summary Пакетное обновление метрик
+// @Description Обновляет несколько метрик за один запрос в формате JSON
+// @Tags metrics
+// @Accept json
+// @Produce json
+// @Param metrics body []models.Metrics true "Массив метрик для обновления"
+// @Success 200 {array} object "Обновленные метрики"
+// @Failure 400 {string} string "Некорректный запрос"
+// @Failure 405 {string} string "Метод не поддерживается"
+// @Failure 500 {string} string "Внутренняя ошибка сервера"
+// @Router /updates [post]
 func (h *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, ErrMethodNotSupported.Error(), http.StatusMethodNotAllowed)

@@ -7,6 +7,6 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -v -o /usr/local/bin/agent github.com/arvaliullin/metrics-collection-service/cmd/agent
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /usr/local/bin/agent github.com/arvaliullin/metrics-collection-service/cmd/agent
 
 CMD ["agent"]

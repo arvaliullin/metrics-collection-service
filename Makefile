@@ -16,10 +16,16 @@ test:
 install-deps:
 	- go install github.com/golang/mock/mockgen@v1.6.0
 	- go install github.com/pressly/goose/v3/cmd/goose@latest
+	- go install github.com/swaggo/swag/cmd/swag@latest
+	- go install -v golang.org/x/tools/cmd/godoc@latest
 
 .PHONY: generate-mocks
 generate-mocks:
 	go generate ./...
+
+.PHONY: swag
+swag:
+	swag init -g cmd/server/main.go
 
 .PHONY: fmt
 fmt:

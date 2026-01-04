@@ -1,0 +1,24 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: API для сбора и хранения метрик
+  title: Metrics Collection Service API
+  version: "1.0"
+paths:
+  /ping:
+    get:
+      description: Проверяет соединение с базой данных
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Проверка доступности базы данных
+      tags:
+      - health
+swagger: "2.0"

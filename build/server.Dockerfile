@@ -7,6 +7,6 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -v -o /usr/local/bin/server github.com/arvaliullin/metrics-collection-service/cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /usr/local/bin/server github.com/arvaliullin/metrics-collection-service/cmd/server
 
 CMD ["server"]

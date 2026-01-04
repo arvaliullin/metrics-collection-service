@@ -17,6 +17,9 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "github.com/arvaliullin/metrics-collection-service/docs"
 )
 
 // handlers содержит все HTTP обработчики приложения
@@ -113,6 +116,7 @@ func (a *ServerApp) setupRouter() {
 	router.Handle(`POST /value/`, a.handlers.getJSON)
 	router.Handle(`GET /ping`, a.handlers.ping)
 	router.Handle(`GET /`, a.handlers.html)
+	router.Get("/swagger/*", httpSwagger.WrapHandler)
 	router.Mount("/debug/pprof/", http.DefaultServeMux)
 
 	a.server = &http.Server{

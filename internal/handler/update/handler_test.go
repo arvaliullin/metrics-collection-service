@@ -104,7 +104,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 				tt.setup(storage)
 			}
 
-			handler := update.NewUpdateHandler(storage)
+			handler := update.NewUpdateHandler(storage, nil)
 			mux := http.NewServeMux()
 
 			mux.Handle(`/update/{type}/{id}/{value}`, handler)

@@ -210,7 +210,7 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				tt.setup(storage)
 			}
 
-			handler := update.NewUpdateJSONHandler(storage)
+			handler := update.NewUpdateJSONHandler(storage, nil)
 			mux := http.NewServeMux()
 			mux.Handle("/update", handler)
 			mux.ServeHTTP(w, r)

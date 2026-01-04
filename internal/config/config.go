@@ -15,6 +15,8 @@ type ServerConfig struct {
 	Restore         bool           `envconfig:"RESTORE" default:"false"`
 	Key             string         `envconfig:"KEY"`
 	DatabaseConfig  PostgresConfig `envconfig:"DATABASE"`
+	AuditFile       string         `envconfig:"AUDIT_FILE"`
+	AuditURL        string         `envconfig:"AUDIT_URL"`
 }
 
 func LoadConfig() *ServerConfig {
@@ -44,6 +46,12 @@ func LoadConfig() *ServerConfig {
 	var flagDsn string
 	flag.StringVar(&flagDsn, "d", "", "строка подключения к БД")
 
+	var flagAuditFile string
+	flag.StringVar(&flagAuditFile, "audit-file", "", "путь к файлу для аудита")
+
+	var flagAuditURL string
+	flag.StringVar(&flagAuditURL, "audit-url", "", "URL для отправки аудита")
+
 	flag.Parse()
 
 	flag.Visit(func(f *flag.Flag) {
@@ -62,6 +70,10 @@ func LoadConfig() *ServerConfig {
 			}
 		case "r":
 			cfg.Restore = flagRestore
+		case "audit-file":
+			cfg.AuditFile = flagAuditFile
+		case "audit-url":
+			cfg.AuditURL = flagAuditURL
 		}
 	})
 

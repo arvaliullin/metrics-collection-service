@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/arvaliullin/metrics-collection-service/internal/audit"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 )
 
 var (
@@ -20,12 +23,14 @@ var (
 )
 
 type UpdateJSONHandler struct {
-	memStorage repository.MetricStorage
+	memStorage    repository.MetricStorage
+	auditNotifier *audit.AuditNotifier
 }
 
-func NewUpdateJSONHandler(memStorage repository.MetricStorage) *UpdateJSONHandler {
+func NewUpdateJSONHandler(memStorage repository.MetricStorage, auditNotifier *audit.AuditNotifier) *UpdateJSONHandler {
 	return &UpdateJSONHandler{
-		memStorage: memStorage,
+		memStorage:    memStorage,
+		auditNotifier: auditNotifier,
 	}
 }
 
@@ -105,4 +110,13 @@ func (h *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+
+	if h.auditNotifier != nil {
+		event := models.AuditEvent{
+			TS:        time.Now().Unix(),
+			Metrics:   []string{metric.ID},
+			IPAddress: utils.ExtractIPAddress(r),
+		}
+		h.auditNotifier.NotifyAll(event)
+	}
 }

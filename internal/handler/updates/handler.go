@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
+	"github.com/arvaliullin/metrics-collection-service/internal/audit"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 )
 
 var (
@@ -23,11 +26,15 @@ var (
 )
 
 type UpdatesHandler struct {
-	memStorage repository.MetricStorage
+	memStorage    repository.MetricStorage
+	auditNotifier *audit.AuditNotifier
 }
 
-func NewUpdatesHandler(memStorage repository.MetricStorage) *UpdatesHandler {
-	return &UpdatesHandler{memStorage: memStorage}
+func NewUpdatesHandler(memStorage repository.MetricStorage, auditNotifier *audit.AuditNotifier) *UpdatesHandler {
+	return &UpdatesHandler{
+		memStorage:    memStorage,
+		auditNotifier: auditNotifier,
+	}
 }
 
 func (h *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +74,19 @@ func (h *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(metrics)
+
+	if h.auditNotifier != nil {
+		metricNames := make([]string, 0, len(metrics))
+		for _, metric := range metrics {
+			metricNames = append(metricNames, metric.ID)
+		}
+		event := models.AuditEvent{
+			TS:        time.Now().Unix(),
+			Metrics:   metricNames,
+			IPAddress: utils.ExtractIPAddress(r),
+		}
+		h.auditNotifier.NotifyAll(event)
+	}
 }
 
 func validateMetric(metric *models.Metrics) error {

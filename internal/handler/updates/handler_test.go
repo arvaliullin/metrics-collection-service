@@ -20,7 +20,7 @@ func TestUpdatesHandler_MethodNotAllowed(t *testing.T) {
 	defer ctrl.Finish()
 
 	storage := repomock.NewMockMetricStorage(ctrl)
-	handler := updates.NewUpdatesHandler(storage)
+	handler := updates.NewUpdatesHandler(storage, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/updates", nil)
 	w := httptest.NewRecorder()
@@ -35,7 +35,7 @@ func TestUpdatesHandler_InvalidJSON(t *testing.T) {
 	defer ctrl.Finish()
 
 	storage := repomock.NewMockMetricStorage(ctrl)
-	handler := updates.NewUpdatesHandler(storage)
+	handler := updates.NewUpdatesHandler(storage, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/updates", bytes.NewReader([]byte("invalid")))
 	w := httptest.NewRecorder()
@@ -50,7 +50,7 @@ func TestUpdatesHandler_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	storage := repomock.NewMockMetricStorage(ctrl)
-	handler := updates.NewUpdatesHandler(storage)
+	handler := updates.NewUpdatesHandler(storage, nil)
 
 	payload := []models.Metrics{
 		{ID: "Alloc", MType: models.Gauge, Value: floatPtr(1.23)},

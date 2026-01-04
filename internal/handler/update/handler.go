@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/arvaliullin/metrics-collection-service/internal/audit"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 )
 
 var (
@@ -17,12 +20,14 @@ var (
 )
 
 type UpdateHandler struct {
-	memStorage repository.MetricStorage
+	memStorage    repository.MetricStorage
+	auditNotifier *audit.AuditNotifier
 }
 
-func NewUpdateHandler(memStorage repository.MetricStorage) *UpdateHandler {
+func NewUpdateHandler(memStorage repository.MetricStorage, auditNotifier *audit.AuditNotifier) *UpdateHandler {
 	return &UpdateHandler{
-		memStorage: memStorage,
+		memStorage:    memStorage,
+		auditNotifier: auditNotifier,
 	}
 }
 
@@ -66,4 +71,13 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("content-type", "text/plain")
 	w.WriteHeader(http.StatusOK)
+
+	if h.auditNotifier != nil {
+		event := models.AuditEvent{
+			TS:        time.Now().Unix(),
+			Metrics:   []string{idMetric},
+			IPAddress: utils.ExtractIPAddress(r),
+		}
+		h.auditNotifier.NotifyAll(event)
+	}
 }

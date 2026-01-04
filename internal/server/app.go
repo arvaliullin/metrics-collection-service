@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/arvaliullin/metrics-collection-service/internal/audit"
 	"github.com/arvaliullin/metrics-collection-service/internal/config"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
@@ -30,11 +31,12 @@ type handlers struct {
 
 // ServerApp представляет основное серверное приложение со всеми зависимостями
 type ServerApp struct {
-	Cfg      *config.ServerConfig
-	handlers *handlers
-	server   *http.Server
-	storage  repository.MetricStorage
-	logger   zerolog.Logger
+	Cfg          *config.ServerConfig
+	handlers     *handlers
+	server       *http.Server
+	storage      repository.MetricStorage
+	logger       zerolog.Logger
+	auditNotifier *audit.AuditNotifier
 }
 
 // New создает новый экземпляр ServerApp с инициализированными зависимостями
@@ -61,14 +63,18 @@ func New(ctx context.Context) *ServerApp {
 		logger.Fatal().Err(err).Msg("failed to initialize storage")
 	}
 
+	auditNotifier := audit.NewAuditNotifier(logger)
+	audit.InitializeReceivers(cfg, auditNotifier, logger)
+
 	app := &ServerApp{
-		Cfg:     cfg,
-		storage: storage,
-		logger:  logger,
+		Cfg:          cfg,
+		storage:      storage,
+		logger:       logger,
+		auditNotifier: auditNotifier,
 		handlers: &handlers{
-			update:     update.NewUpdateHandler(storage),
-			updateJSON: update.NewUpdateJSONHandler(storage),
-			updates:    updates.NewUpdatesHandler(storage),
+			update:     update.NewUpdateHandler(storage, auditNotifier),
+			updateJSON: update.NewUpdateJSONHandler(storage, auditNotifier),
+			updates:    updates.NewUpdatesHandler(storage, auditNotifier),
 			get:        get.NewGetHandler(storage),
 			getJSON:    get.NewGetJSONHandler(storage),
 			html:       html.NewHTMLHandler(storage),

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/audit"
@@ -31,11 +32,11 @@ type handlers struct {
 
 // ServerApp представляет основное серверное приложение со всеми зависимостями
 type ServerApp struct {
-	Cfg          *config.ServerConfig
-	handlers     *handlers
-	server       *http.Server
-	storage      repository.MetricStorage
-	logger       zerolog.Logger
+	Cfg           *config.ServerConfig
+	handlers      *handlers
+	server        *http.Server
+	storage       repository.MetricStorage
+	logger        zerolog.Logger
 	auditNotifier *audit.AuditNotifier
 }
 
@@ -67,9 +68,9 @@ func New(ctx context.Context) *ServerApp {
 	audit.InitializeReceivers(cfg, auditNotifier, logger)
 
 	app := &ServerApp{
-		Cfg:          cfg,
-		storage:      storage,
-		logger:       logger,
+		Cfg:           cfg,
+		storage:       storage,
+		logger:        logger,
 		auditNotifier: auditNotifier,
 		handlers: &handlers{
 			update:     update.NewUpdateHandler(storage, auditNotifier),
@@ -112,6 +113,7 @@ func (a *ServerApp) setupRouter() {
 	router.Handle(`POST /value/`, a.handlers.getJSON)
 	router.Handle(`GET /ping`, a.handlers.ping)
 	router.Handle(`GET /`, a.handlers.html)
+	router.Mount("/debug/pprof/", http.DefaultServeMux)
 
 	a.server = &http.Server{
 		Addr:    a.Cfg.Address,

@@ -44,7 +44,7 @@ curl-get:
 
 .PHONY: up
 up:
-	- docker-compose up --build -d
+	- docker compose up --build -d
 
 .PHONY: pprof
 pprof:
@@ -52,7 +52,7 @@ pprof:
 
 .PHONY: down
 down:
-	- docker-compose down -v
+	- docker compose down -v
 
 .PHONY: clean
 clean:
@@ -68,7 +68,7 @@ prune: down
 
 .PHONY: logs
 logs:
-	- docker-compose logs
+	- docker compose logs
 
 .PHONY: migration-create
 migration-create:

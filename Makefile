@@ -12,6 +12,38 @@ run:
 test:
 	- go test ./...
 
+.PHONY: bench
+bench:
+	go test -bench=. -benchmem ./internal/repository/memory/
+
+.PHONY: bench-profile-base
+bench-profile-base:
+	mkdir -p bin/profiles
+	go test -bench=BenchmarkRepository_BatchUpdate_1000 -benchmem -benchtime=10s -count=3 -memprofile=bin/profiles/base.pprof ./internal/repository/memory/
+	@echo "Benchmark memory profile saved to bin/profiles/base.pprof"
+
+.PHONY: bench-profile-result
+bench-profile-result:
+	mkdir -p bin/profiles
+	go test -bench=BenchmarkRepository_BatchUpdate_1000 -benchmem -benchtime=10s -count=3 -memprofile=bin/profiles/result.pprof ./internal/repository/memory/
+	@echo "Benchmark memory profile saved to bin/profiles/result.pprof"
+
+.PHONY: bench-profile-diff
+bench-profile-diff:
+	@if [ ! -f bin/profiles/base.pprof ] || [ ! -f bin/profiles/result.pprof ]; then \
+		echo "Error: Both bin/profiles/base.pprof and bin/profiles/result.pprof must exist"; \
+		exit 1; \
+	fi
+	go tool pprof -top -diff_base=bin/profiles/base.pprof bin/profiles/result.pprof
+
+.PHONY: bench-profile-view
+bench-profile-view:
+	@if [ ! -f bin/profiles/base.pprof ] || [ ! -f bin/profiles/result.pprof ]; then \
+		echo "Error: Both bin/profiles/base.pprof and bin/profiles/result.pprof must exist"; \
+		exit 1; \
+	fi
+	go tool pprof -http=":9090" -diff_base=bin/profiles/base.pprof bin/profiles/result.pprof
+
 .PHONY: install-deps
 install-deps:
 	- go install github.com/golang/mock/mockgen@v1.6.0

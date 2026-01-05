@@ -30,18 +30,7 @@ func (r *Repository) updateGauge(metric *models.Metrics) {
 		return
 	}
 
-	existing, exists := r.gauge[metric.ID]
-	if exists && existing.Value != nil {
-		*existing.Value = *metric.Value
-		return
-	}
-
-	value := *metric.Value
-	r.gauge[metric.ID] = models.Metrics{
-		ID:    metric.ID,
-		MType: models.Gauge,
-		Value: &value,
-	}
+	r.gauge[metric.ID] = *metric.Value
 }
 
 // updateCounter обновляет метрику типа Counter, минимизируя аллокации.
@@ -51,35 +40,7 @@ func (r *Repository) updateCounter(metric *models.Metrics) {
 	}
 
 	delta := r.extractDelta(metric)
-
-	existing, exists := r.counter[metric.ID]
-	if !exists {
-		r.counter[metric.ID] = models.Metrics{
-			ID:    metric.ID,
-			MType: models.Counter,
-			Delta: &delta,
-		}
-		return
-	}
-
-	if existing.Delta != nil {
-		*existing.Delta += delta
-		r.counter[metric.ID] = existing
-	} else if existing.Value != nil {
-		current := int64(*existing.Value)
-		newDelta := current + delta
-		r.counter[metric.ID] = models.Metrics{
-			ID:    metric.ID,
-			MType: models.Counter,
-			Delta: &newDelta,
-		}
-	} else {
-		r.counter[metric.ID] = models.Metrics{
-			ID:    metric.ID,
-			MType: models.Counter,
-			Delta: &delta,
-		}
-	}
+	r.counter[metric.ID] += delta
 }
 
 // extractDelta извлекает значение delta из метрики.

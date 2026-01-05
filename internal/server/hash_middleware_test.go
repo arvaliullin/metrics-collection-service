@@ -45,7 +45,7 @@ func TestHashValidationMiddleware(t *testing.T) {
 			key:            key,
 			body:           testData,
 			hash:           "invalid",
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:           "no hash header",

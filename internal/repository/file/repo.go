@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,9 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
 	"github.com/rs/zerolog"
 )
+
+// ErrPingNotAvailable сообщает о том, что проверка соединения с БД недоступна для файлового хранилища.
+var ErrPingNotAvailable = errors.New("проверка соединения с БД недоступна: используется файловое хранилище")
 
 // Config описывает параметры файлового хранилища.
 type Config struct {
@@ -202,5 +206,5 @@ func (r *Repository) loadFromFile(ctx context.Context) error {
 
 // Ping возвращает ошибку, так как подключение к БД не используется.
 func (r *Repository) Ping(ctx context.Context) error {
-	return fmt.Errorf("проверка соединения с БД недоступна: используется файловое хранилище")
+	return ErrPingNotAvailable
 }

@@ -37,7 +37,7 @@ ON CONFLICT (id) DO UPDATE SET
 		switch metric.MType {
 		case models.Gauge:
 			if metric.Value == nil {
-				return fmt.Errorf("gauge %q has no value", metric.ID)
+				return &GaugeHasNoValueError{ID: metric.ID}
 			}
 			if _, err = tx.Exec(ctx, upsertGauge, metric.ID, *metric.Value); err != nil {
 				return fmt.Errorf("upsert gauge %q: %w", metric.ID, err)
@@ -50,13 +50,13 @@ ON CONFLICT (id) DO UPDATE SET
 			case metric.Value != nil:
 				delta = int64(*metric.Value)
 			default:
-				return fmt.Errorf("counter %q has no delta", metric.ID)
+				return &CounterHasNoDeltaError{ID: metric.ID}
 			}
 			if _, err = tx.Exec(ctx, upsertCounter, metric.ID, delta); err != nil {
 				return fmt.Errorf("upsert counter %q: %w", metric.ID, err)
 			}
 		default:
-			return fmt.Errorf("unsupported metric type %q", metric.MType)
+			return &UnsupportedMetricTypeError{Type: metric.MType}
 		}
 	}
 

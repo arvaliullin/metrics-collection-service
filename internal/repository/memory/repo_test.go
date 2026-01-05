@@ -2,6 +2,7 @@ package memory_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
@@ -187,5 +188,49 @@ func TestRepository_GetCounter(t *testing.T) {
 				t.Errorf("GetCounter() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRepository_GetGauge_ErrorsIs(t *testing.T) {
+	ctx := context.Background()
+	ms := memory.NewRepository()
+
+	_, err := ms.GetGauge(ctx, "nonexistent")
+	if err == nil {
+		t.Fatal("GetGauge() should return error for nonexistent metric")
+	}
+
+	if !errors.Is(err, memory.ErrGaugeNotFound) {
+		t.Errorf("GetGauge() error should be ErrGaugeNotFound, got: %v", err)
+	}
+
+	var gaugeErr *memory.GaugeNotFoundError
+	if !errors.As(err, &gaugeErr) {
+		t.Fatal("GetGauge() error should be of type GaugeNotFoundError")
+	}
+	if gaugeErr.ID != "nonexistent" {
+		t.Errorf("GaugeNotFoundError.ID = %q, want %q", gaugeErr.ID, "nonexistent")
+	}
+}
+
+func TestRepository_GetCounter_ErrorsIs(t *testing.T) {
+	ctx := context.Background()
+	ms := memory.NewRepository()
+
+	_, err := ms.GetCounter(ctx, "nonexistent")
+	if err == nil {
+		t.Fatal("GetCounter() should return error for nonexistent metric")
+	}
+
+	if !errors.Is(err, memory.ErrCounterNotFound) {
+		t.Errorf("GetCounter() error should be ErrCounterNotFound, got: %v", err)
+	}
+
+	var counterErr *memory.CounterNotFoundError
+	if !errors.As(err, &counterErr) {
+		t.Fatal("GetCounter() error should be of type CounterNotFoundError")
+	}
+	if counterErr.ID != "nonexistent" {
+		t.Errorf("CounterNotFoundError.ID = %q, want %q", counterErr.ID, "nonexistent")
 	}
 }

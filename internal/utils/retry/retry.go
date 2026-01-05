@@ -9,6 +9,9 @@ import (
 // ErrAttemptFuncNil сообщает о попытке выполнить стратегию без переданного действия.
 var ErrAttemptFuncNil = fmt.Errorf("retry attempt is nil")
 
+// ErrStrategyNil сообщает о попытке выполнить действие с nil стратегией повторов.
+var ErrStrategyNil = fmt.Errorf("retry strategy is nil")
+
 // DefaultDelays задаёт интервалы между повторными попытками по умолчанию.
 var DefaultDelays = []time.Duration{
 	time.Second,
@@ -58,7 +61,7 @@ func NewStrategy(delays []time.Duration, shouldRetry ShouldRetryFunc) *Strategy 
 // DoWithRetry выполняет действие с ограниченным числом повторов и заданными задержками.
 func (s *Strategy) DoWithRetry(ctx context.Context, attempt AttemptFunc) error {
 	if s == nil {
-		return fmt.Errorf("retry strategy is nil")
+		return ErrStrategyNil
 	}
 
 	if attempt == nil {

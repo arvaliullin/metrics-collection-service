@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
@@ -39,7 +38,7 @@ func (r *Repository) GetGauge(ctx context.Context, id string) (float64, error) {
 	if value, exists := r.gauge[id]; exists {
 		return value, nil
 	}
-	return 0, fmt.Errorf("для %s не задано значение Gauage", id)
+	return 0, &GaugeNotFoundError{ID: id}
 }
 
 // GetCounter возвращает значение метрики counter для id.
@@ -50,7 +49,7 @@ func (r *Repository) GetCounter(ctx context.Context, id string) (int64, error) {
 	if value, exists := r.counter[id]; exists {
 		return value, nil
 	}
-	return 0, fmt.Errorf("для %s не задано значение Counter", id)
+	return 0, &CounterNotFoundError{ID: id}
 }
 
 // AddCounter добавляет к предыдущему значению newCounter.
@@ -117,5 +116,5 @@ func (r *Repository) AllGauges(ctx context.Context) []models.Metrics {
 
 // Ping возвращает ошибку, так как подключение к БД не используется.
 func (r *Repository) Ping(ctx context.Context) error {
-	return fmt.Errorf("проверка соединения с БД недоступна: используется in-memory хранилище")
+	return ErrPingNotAvailable
 }

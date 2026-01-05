@@ -3,7 +3,6 @@ package retry
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
@@ -11,6 +10,9 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 )
+
+// ErrPostgresRepositoryUndefined сообщает о том, что репозиторий PostgreSQL не определён.
+var ErrPostgresRepositoryUndefined = errors.New("postgres repository is undefined")
 
 // PostgresAdapter добавляет стратегию повторов поверх репозитория PostgreSQL.
 type PostgresAdapter struct {
@@ -21,7 +23,7 @@ type PostgresAdapter struct {
 // NewPostgresAdapter создаёт адаптер репозитория PostgreSQL.
 func NewPostgresAdapter(repo repository.MetricStorage, strategy *retryutil.Strategy) (*PostgresAdapter, error) {
 	if repo == nil {
-		return nil, fmt.Errorf("postgres repository is undefined")
+		return nil, ErrPostgresRepositoryUndefined
 	}
 
 	if strategy == nil {

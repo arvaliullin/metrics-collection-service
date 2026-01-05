@@ -17,3 +17,4 @@ make up
 
 - [Swagger API документация](http://localhost:8080/swagger/) - доступна после запуска сервера
 - [Документация пакетов](http://localhost:6060/pkg/github.com/arvaliullin/metrics-collection-service/?m=all) - запуск: `make godoc`
+- [Отчет по оптимизации производительности](docs/PERFORMANCE_OPTIMIZATION.md) - анализ использования памяти и оптимизация кода

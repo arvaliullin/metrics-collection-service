@@ -14,7 +14,7 @@ func BenchmarkRepository_BatchUpdate_1000(b *testing.B) {
 	repo := memory.NewRepository()
 	metrics := make([]models.Metrics, 1000)
 
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		if i%2 == 0 {
 			val := float64(i)
 			metrics[i] = models.Metrics{
@@ -33,7 +33,7 @@ func BenchmarkRepository_BatchUpdate_1000(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = repo.BatchUpdate(ctx, metrics)
+	for b.Loop() {
+		repo.BatchUpdate(ctx, metrics)
 	}
 }

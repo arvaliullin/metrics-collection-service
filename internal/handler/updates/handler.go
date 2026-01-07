@@ -27,10 +27,10 @@ var (
 
 type UpdatesHandler struct {
 	memStorage    repository.MetricStorage
-	auditNotifier *audit.AuditNotifier
+	auditNotifier audit.Notifier
 }
 
-func NewUpdatesHandler(memStorage repository.MetricStorage, auditNotifier *audit.AuditNotifier) *UpdatesHandler {
+func NewUpdatesHandler(memStorage repository.MetricStorage, auditNotifier audit.Notifier) *UpdatesHandler {
 	return &UpdatesHandler{
 		memStorage:    memStorage,
 		auditNotifier: auditNotifier,

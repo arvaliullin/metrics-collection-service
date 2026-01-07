@@ -8,8 +8,8 @@ import (
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	pingmock "github.com/arvaliullin/metrics-collection-service/internal/handler/ping/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestPingHandler_ServeHTTP(t *testing.T) {

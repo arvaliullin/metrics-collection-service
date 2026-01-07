@@ -5,6 +5,18 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// Notifier определяет интерфейс для уведомления о событиях аудита.
+//
+//go:generate mockgen -source=notifier.go -destination=mock/notifier_mock.go -package=auditmock
+type Notifier interface {
+	// Subscribe добавляет наблюдателя.
+	Subscribe(observer AuditObserver)
+	// Unsubscribe удаляет наблюдателя.
+	Unsubscribe(observer AuditObserver)
+	// NotifyAll уведомляет всех наблюдателей о событии аудита.
+	NotifyAll(event models.AuditEvent)
+}
+
 // AuditNotifier представляет субъект в паттерне Observer.
 type AuditNotifier struct {
 	observers map[AuditObserver]struct{}

@@ -24,10 +24,10 @@ var (
 
 type UpdateJSONHandler struct {
 	memStorage    repository.MetricStorage
-	auditNotifier *audit.AuditNotifier
+	auditNotifier audit.Notifier
 }
 
-func NewUpdateJSONHandler(memStorage repository.MetricStorage, auditNotifier *audit.AuditNotifier) *UpdateJSONHandler {
+func NewUpdateJSONHandler(memStorage repository.MetricStorage, auditNotifier audit.Notifier) *UpdateJSONHandler {
 	return &UpdateJSONHandler{
 		memStorage:    memStorage,
 		auditNotifier: auditNotifier,

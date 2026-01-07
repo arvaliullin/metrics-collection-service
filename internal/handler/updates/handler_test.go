@@ -11,8 +11,8 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestUpdatesHandler_MethodNotAllowed(t *testing.T) {

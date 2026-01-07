@@ -40,7 +40,7 @@ type ServerApp struct {
 	server        *http.Server
 	storage       repository.MetricStorage
 	logger        zerolog.Logger
-	auditNotifier *audit.AuditNotifier
+	auditNotifier audit.Notifier
 }
 
 // New создает новый экземпляр ServerApp с инициализированными зависимостями

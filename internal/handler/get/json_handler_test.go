@@ -10,8 +10,8 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetJSONHandler_ServeHTTP(t *testing.T) {

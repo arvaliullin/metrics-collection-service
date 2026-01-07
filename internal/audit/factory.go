@@ -6,7 +6,7 @@ import (
 )
 
 // InitializeReceivers создает и инициализирует приёмники аудита на основе конфигурации.
-func InitializeReceivers(cfg *config.ServerConfig, notifier *AuditNotifier, logger zerolog.Logger) {
+func InitializeReceivers(cfg *config.ServerConfig, notifier Notifier, logger zerolog.Logger) {
 	if cfg.AuditFile != "" {
 		fileReceiver := NewFileAuditReceiver(cfg.AuditFile)
 		notifier.Subscribe(fileReceiver)

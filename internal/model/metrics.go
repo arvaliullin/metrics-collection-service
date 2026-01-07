@@ -17,3 +17,8 @@ type Metrics struct {
 	Value *float64 `json:"value,omitempty"`
 	Hash  string   `json:"hash,omitempty"`
 }
+
+// MetricsBatch представляет пакет метрик.
+type MetricsBatch struct {
+	Metrics []Metrics
+}

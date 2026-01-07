@@ -13,7 +13,7 @@ func (r *Repository) BatchUpdate(ctx context.Context, metrics []models.Metrics) 
 		return nil
 	}
 
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.client.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}

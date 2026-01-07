@@ -7,10 +7,10 @@ import (
 )
 
 // ErrAttemptFuncNil сообщает о попытке выполнить стратегию без переданного действия.
-var ErrAttemptFuncNil = fmt.Errorf("retry attempt is nil")
+var ErrAttemptFuncNil = fmt.Errorf("функция повтора не задана")
 
 // ErrStrategyNil сообщает о попытке выполнить действие с nil стратегией повторов.
-var ErrStrategyNil = fmt.Errorf("retry strategy is nil")
+var ErrStrategyNil = fmt.Errorf("стратегия повторов не задана")
 
 // DefaultDelays задаёт интервалы между повторными попытками по умолчанию.
 var DefaultDelays = []time.Duration{

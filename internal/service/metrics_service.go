@@ -63,7 +63,7 @@ func (s *ServerMetricsService) GetCounter(ctx context.Context, id string) (int64
 	return s.storage.GetCounter(ctx, id)
 }
 
-// GetMetric получает метрику по её описанию (для JSON API).
+// GetMetric получает метрику по её описанию.
 func (s *ServerMetricsService) GetMetric(ctx context.Context, metric models.Metrics) (models.Metrics, error) {
 	if err := validateMetricForGet(&metric); err != nil {
 		return models.Metrics{}, err
@@ -97,7 +97,7 @@ func (s *ServerMetricsService) GetMetric(ctx context.Context, metric models.Metr
 	return response, nil
 }
 
-// UpdateMetric обновляет метрику по её описанию (для JSON API).
+// UpdateMetric обновляет метрику по её описанию.
 func (s *ServerMetricsService) UpdateMetric(ctx context.Context, metric models.Metrics) (models.Metrics, error) {
 	if err := validateMetricForUpdate(&metric); err != nil {
 		return models.Metrics{}, err
@@ -157,7 +157,7 @@ func (s *ServerMetricsService) BatchUpdate(ctx context.Context, metrics []models
 	return metrics, nil
 }
 
-// GetAllMetrics получает все метрики (gauges и counters).
+// GetAllMetrics получает все метрики.
 func (s *ServerMetricsService) GetAllMetrics(ctx context.Context) (gauges []models.Metrics, counters []models.Metrics, err error) {
 	gauges = s.storage.AllGauges(ctx)
 	counters = s.storage.AllCounters(ctx)
@@ -196,7 +196,7 @@ func validateMetric(metric *models.Metrics) error {
 	return nil
 }
 
-// validateMetricForUpdate валидирует метрику для обновления через JSON API.
+// validateMetricForUpdate валидирует метрику для обновления.
 func validateMetricForUpdate(metric *models.Metrics) error {
 	if metric.ID == "" {
 		return ErrMissingID
@@ -217,7 +217,7 @@ func validateMetricForUpdate(metric *models.Metrics) error {
 	return nil
 }
 
-// validateMetricForGet валидирует метрику для получения через JSON API.
+// validateMetricForGet валидирует метрику для получения.
 func validateMetricForGet(metric *models.Metrics) error {
 	if metric.ID == "" {
 		return ErrMissingID

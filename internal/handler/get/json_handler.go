@@ -2,11 +2,13 @@ package get
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/arvaliullin/metrics-collection-service/internal/ports"
+	"github.com/arvaliullin/metrics-collection-service/internal/service"
 )
 
 var (
@@ -52,7 +54,11 @@ func (h *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.metricsService.GetMetric(r.Context(), metric)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		statusCode := http.StatusBadRequest
+		if errors.Is(err, service.ErrNotFound) {
+			statusCode = http.StatusNotFound
+		}
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
 

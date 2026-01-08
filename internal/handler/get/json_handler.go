@@ -6,22 +6,20 @@ import (
 	"net/http"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 )
 
 var (
 	ErrInvalidJSON      = fmt.Errorf("некорректный JSON")
-	ErrMissingID        = fmt.Errorf("не указано имя метрики")
-	ErrMissingType      = fmt.Errorf("не указан тип метрики")
 	ErrMethodNotAllowed = fmt.Errorf("метод не поддерживается")
 )
 
 type GetJSONHandler struct {
-	memStorage repository.MetricStorage
+	metricsService ports.ServerMetricsService
 }
 
-func NewGetJSONHandler(memStorage repository.MetricStorage) *GetJSONHandler {
-	return &GetJSONHandler{memStorage: memStorage}
+func NewGetJSONHandler(metricsService ports.ServerMetricsService) *GetJSONHandler {
+	return &GetJSONHandler{metricsService: metricsService}
 }
 
 // @Summary Получение метрики
@@ -52,40 +50,9 @@ func (h *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if metric.ID == "" {
-		http.Error(w, ErrMissingID.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if metric.MType == "" {
-		http.Error(w, ErrMissingType.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var response models.Metrics
-	response.ID = metric.ID
-	response.MType = metric.MType
-
-	switch metric.MType {
-	case models.Gauge:
-		value, err := h.memStorage.GetGauge(r.Context(), metric.ID)
-		if err != nil {
-			http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
-			return
-		}
-		response.Value = &value
-
-	case models.Counter:
-		value, err := h.memStorage.GetCounter(r.Context(), metric.ID)
-		if err != nil {
-			http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
-			return
-		}
-		delta := value
-		response.Delta = &delta
-
-	default:
-		http.Error(w, ErrInvalidMetricType.Error(), http.StatusBadRequest)
+	response, err := h.metricsService.GetMetric(r.Context(), metric)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

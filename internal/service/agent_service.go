@@ -23,7 +23,11 @@ type AgentService struct {
 }
 
 // NewAgentService создаёт новый экземпляр AgentService.
-func NewAgentService(collector ports.MetricsCollector, reporter ports.MetricsReporter, pollInterval, reportInterval time.Duration, rateLimit int, logger zerolog.Logger) *AgentService {
+func NewAgentService(collector ports.MetricsCollector,
+	reporter ports.MetricsReporter,
+	pollInterval, reportInterval time.Duration,
+	rateLimit int,
+	logger zerolog.Logger) *AgentService {
 	return &AgentService{
 		collector:      collector,
 		reporter:       reporter,

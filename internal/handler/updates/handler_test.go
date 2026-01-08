@@ -2,7 +2,6 @@ package updates_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +9,7 @@ import (
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
+	portsmock "github.com/arvaliullin/metrics-collection-service/internal/ports/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -19,8 +18,9 @@ func TestUpdatesHandler_MethodNotAllowed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	storage := repomock.NewMockMetricStorage(ctrl)
-	handler := updates.NewUpdatesHandler(storage, nil)
+	metricsService := portsmock.NewMockServerMetricsService(ctrl)
+	auditNotifier := portsmock.NewMockAuditNotifier(ctrl)
+	handler := updates.NewUpdatesHandler(metricsService, auditNotifier)
 
 	req := httptest.NewRequest(http.MethodGet, "/updates", nil)
 	w := httptest.NewRecorder()
@@ -34,8 +34,9 @@ func TestUpdatesHandler_InvalidJSON(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	storage := repomock.NewMockMetricStorage(ctrl)
-	handler := updates.NewUpdatesHandler(storage, nil)
+	metricsService := portsmock.NewMockServerMetricsService(ctrl)
+	auditNotifier := portsmock.NewMockAuditNotifier(ctrl)
+	handler := updates.NewUpdatesHandler(metricsService, auditNotifier)
 
 	req := httptest.NewRequest(http.MethodPost, "/updates", bytes.NewReader([]byte("invalid")))
 	w := httptest.NewRecorder()
@@ -49,22 +50,24 @@ func TestUpdatesHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	storage := repomock.NewMockMetricStorage(ctrl)
-	handler := updates.NewUpdatesHandler(storage, nil)
+	metricsService := portsmock.NewMockServerMetricsService(ctrl)
+	auditNotifier := portsmock.NewMockAuditNotifier(ctrl)
+	handler := updates.NewUpdatesHandler(metricsService, auditNotifier)
 
 	payload := []models.Metrics{
 		{ID: "Alloc", MType: models.Gauge, Value: floatPtr(1.23)},
 		{ID: "PollCount", MType: models.Counter, Delta: intPtr(5)},
 	}
 
-	storage.EXPECT().
+	metricsService.EXPECT().
 		BatchUpdate(gomock.Any(), gomock.Len(len(payload))).
-		DoAndReturn(func(ctx context.Context, metrics []models.Metrics) error {
+		DoAndReturn(func(ctx interface{}, metrics []models.Metrics) ([]models.Metrics, error) {
 			require.Len(t, metrics, len(payload))
 			require.Equal(t, payload[0].ID, metrics[0].ID)
 			require.Equal(t, payload[1].ID, metrics[1].ID)
-			return nil
+			return metrics, nil
 		})
+	auditNotifier.EXPECT().NotifyAll(gomock.Any()).Times(1)
 
 	body, err := json.Marshal(payload)
 	require.NoError(t, err)

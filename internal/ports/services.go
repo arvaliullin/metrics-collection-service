@@ -3,7 +3,10 @@ package ports
 import (
 	"context"
 
+	"github.com/arvaliullin/metrics-collection-service/internal/config"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/rs/zerolog"
 )
 
 //go:generate mockgen -source=services.go -destination=mock/services_mock.go -package=portsmock
@@ -45,4 +48,30 @@ type AuditNotifier interface {
 type AuditObserver interface {
 	// Notify уведомляет наблюдателя о событии аудита.
 	Notify(event models.AuditEvent) error
+}
+
+// ServerMetricsService определяет интерфейс для работы с метриками на сервере.
+type ServerMetricsService interface {
+	// UpdateGauge обновляет значение gauge метрики.
+	UpdateGauge(ctx context.Context, id string, value float64) error
+	// UpdateCounter обновляет значение counter метрики.
+	UpdateCounter(ctx context.Context, id string, delta int64) error
+	// GetGauge получает значение gauge метрики.
+	GetGauge(ctx context.Context, id string) (float64, error)
+	// GetCounter получает значение counter метрики.
+	GetCounter(ctx context.Context, id string) (int64, error)
+	// GetMetric получает метрику по её описанию.
+	GetMetric(ctx context.Context, metric models.Metrics) (models.Metrics, error)
+	// UpdateMetric обновляет метрику по её описанию.
+	UpdateMetric(ctx context.Context, metric models.Metrics) (models.Metrics, error)
+	// BatchUpdate выполняет пакетное обновление метрик.
+	BatchUpdate(ctx context.Context, metrics []models.Metrics) ([]models.Metrics, error)
+	// GetAllMetrics получает все метрики (gauges и counters).
+	GetAllMetrics(ctx context.Context) (gauges []models.Metrics, counters []models.Metrics, err error)
+}
+
+// StorageService определяет интерфейс для создания хранилища метрик.
+type StorageService interface {
+	// CreateStorage создает хранилище метрик на основе конфигурации.
+	CreateStorage(ctx context.Context, cfg *config.ServerConfig, logger zerolog.Logger) (repository.MetricStorage, error)
 }

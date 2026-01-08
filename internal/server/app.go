@@ -12,6 +12,7 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
+	"github.com/arvaliullin/metrics-collection-service/internal/http/middleware"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/arvaliullin/metrics-collection-service/internal/service"
@@ -62,7 +63,8 @@ func New(ctx context.Context) *ServerApp {
 		Str("key", cfg.Key).
 		Msg("server configuration loaded")
 
-	storage, err := createStorage(ctx, cfg, logger)
+	storageService := service.NewStorageService()
+	storage, err := storageService.CreateStorage(ctx, cfg, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to initialize storage")
 	}
@@ -71,18 +73,20 @@ func New(ctx context.Context) *ServerApp {
 	auditService := service.NewAuditService(notifier, logger)
 	auditService.InitializeReceivers(cfg)
 
+	metricsService := service.NewServerMetricsService(storage, logger)
+
 	app := &ServerApp{
 		Cfg:          cfg,
 		storage:      storage,
 		logger:       logger,
 		auditService: auditService,
 		handlers: &handlers{
-			update:     update.NewUpdateHandler(storage, auditService),
-			updateJSON: update.NewUpdateJSONHandler(storage, auditService),
-			updates:    updates.NewUpdatesHandler(storage, auditService),
-			get:        get.NewGetHandler(storage),
-			getJSON:    get.NewGetJSONHandler(storage),
-			html:       html.NewHTMLHandler(storage),
+			update:     update.NewUpdateHandler(metricsService, auditService),
+			updateJSON: update.NewUpdateJSONHandler(metricsService, auditService),
+			updates:    updates.NewUpdatesHandler(metricsService, auditService),
+			get:        get.NewGetHandler(metricsService),
+			getJSON:    get.NewGetJSONHandler(metricsService),
+			html:       html.NewHTMLHandler(metricsService),
 			ping:       ping.NewPingHandler(storage),
 		},
 	}
@@ -100,11 +104,11 @@ func (a *ServerApp) Logger() *zerolog.Logger {
 // setupRouter настраивает HTTP маршруты
 func (a *ServerApp) setupRouter() {
 	router := chi.NewRouter()
-	router.Use(HashValidationMiddleware(a.Cfg.Key, a.logger))
-	router.Use(GzipDecompressMiddleware())
-	router.Use(HashResponseMiddleware(a.Cfg.Key, a.logger))
-	router.Use(GzipCompressMiddleware())
-	router.Use(loggingMiddleware(a.logger))
+	router.Use(middleware.HashValidationMiddleware(a.Cfg.Key, a.logger))
+	router.Use(middleware.GzipDecompressMiddleware())
+	router.Use(middleware.HashResponseMiddleware(a.Cfg.Key, a.logger))
+	router.Use(middleware.GzipCompressMiddleware())
+	router.Use(middleware.LoggingMiddleware(a.logger))
 
 	router.Handle(`POST /update/{type}/{id}/{value}`, a.handlers.update)
 	router.Handle(`GET /value/{type}/{id}`, a.handlers.get)

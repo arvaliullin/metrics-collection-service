@@ -6,23 +6,26 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 )
 
 // HTMLHandler обрабатывает GET-запрос и возвращает HTML-страницу со списком метрик.
 type HTMLHandler struct {
-	memStorage repository.MetricStorage
+	metricsService ports.ServerMetricsService
 }
 
 // NewHTMLHandler создает обработчик HTML-страницы со списком метрик.
-func NewHTMLHandler(memStorage repository.MetricStorage) *HTMLHandler {
-	return &HTMLHandler{memStorage: memStorage}
+func NewHTMLHandler(metricsService ports.ServerMetricsService) *HTMLHandler {
+	return &HTMLHandler{metricsService: metricsService}
 }
 
 // ServeHTTP возвращает HTML-страницу с таблицами Gauge и Counter.
 func (h *HTMLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	gauges := h.memStorage.AllGauges(r.Context())
-	counters := h.memStorage.AllCounters(r.Context())
+	gauges, counters, err := h.metricsService.GetAllMetrics(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	var b strings.Builder
 	writeDocStart(&b)

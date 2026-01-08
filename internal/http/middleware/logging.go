@@ -1,4 +1,4 @@
-package server
+package middleware
 
 import (
 	"net/http"
@@ -24,7 +24,8 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return size, err
 }
 
-func loggingMiddleware(logger zerolog.Logger) func(http.Handler) http.Handler {
+// LoggingMiddleware логирует HTTP запросы
+func LoggingMiddleware(logger zerolog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()

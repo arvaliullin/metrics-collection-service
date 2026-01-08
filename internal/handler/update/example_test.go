@@ -10,12 +10,17 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
+	"github.com/arvaliullin/metrics-collection-service/internal/service"
+	"github.com/rs/zerolog"
 )
 
 func ExampleUpdateJSONHandler_ServeHTTP() {
 	// Создаём изолированный репозиторий для теста
 	repo := memory.NewRepository()
-	handler := update.NewUpdateJSONHandler(repo, nil)
+	logger := zerolog.Nop()
+	metricsService := service.NewServerMetricsService(repo, logger)
+	auditNotifier := service.NewAuditNotifier(logger)
+	handler := update.NewUpdateJSONHandler(metricsService, auditNotifier)
 
 	// Создаём тестовый HTTP сервер
 	mux := http.NewServeMux()

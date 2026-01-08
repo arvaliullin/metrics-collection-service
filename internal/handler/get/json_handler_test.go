@@ -9,7 +9,8 @@ import (
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
+	portsmock "github.com/arvaliullin/metrics-collection-service/internal/ports/mock"
+	"github.com/arvaliullin/metrics-collection-service/internal/service"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -27,7 +28,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 		method      string
 		target      string
 		body        models.Metrics
-		setup       func(*repomock.MockMetricStorage)
+		setup       func(*portsmock.MockServerMetricsService)
 		want        want
 		invalidJSON bool
 	}{
@@ -39,8 +40,15 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				MType: "gauge",
 			},
-			setup: func(ms *repomock.MockMetricStorage) {
-				ms.EXPECT().GetGauge(gomock.Any(), "someMetric").Return(3.14, nil)
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetMetric(gomock.Any(), models.Metrics{
+					ID:    "someMetric",
+					MType: "gauge",
+				}).Return(models.Metrics{
+					ID:    "someMetric",
+					MType: "gauge",
+					Value: func() *float64 { v := 3.14; return &v }(),
+				}, nil)
 			},
 			want: want{
 				code:        http.StatusOK,
@@ -60,8 +68,15 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "counterMetric",
 				MType: "counter",
 			},
-			setup: func(ms *repomock.MockMetricStorage) {
-				ms.EXPECT().GetCounter(gomock.Any(), "counterMetric").Return(int64(42), nil)
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetMetric(gomock.Any(), models.Metrics{
+					ID:    "counterMetric",
+					MType: "counter",
+				}).Return(models.Metrics{
+					ID:    "counterMetric",
+					MType: "counter",
+					Delta: func() *int64 { v := int64(42); return &v }(),
+				}, nil)
 			},
 			want: want{
 				code:        http.StatusOK,
@@ -93,9 +108,14 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 			body: models.Metrics{
 				MType: "gauge",
 			},
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetMetric(gomock.Any(), models.Metrics{
+					MType: "gauge",
+				}).Return(models.Metrics{}, service.ErrMissingID)
+			},
 			want: want{
 				code: http.StatusBadRequest,
-				body: get.ErrMissingID.Error(),
+				body: service.ErrMissingID.Error(),
 			},
 		},
 		{
@@ -105,9 +125,14 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 			body: models.Metrics{
 				ID: "someMetric",
 			},
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetMetric(gomock.Any(), models.Metrics{
+					ID: "someMetric",
+				}).Return(models.Metrics{}, service.ErrMissingType)
+			},
 			want: want{
 				code: http.StatusBadRequest,
-				body: get.ErrMissingType.Error(),
+				body: service.ErrMissingType.Error(),
 			},
 		},
 		{
@@ -118,12 +143,15 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "nonexistent",
 				MType: "gauge",
 			},
-			setup: func(ms *repomock.MockMetricStorage) {
-				ms.EXPECT().GetGauge(gomock.Any(), "nonexistent").Return(0.0, get.ErrNotFound)
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetMetric(gomock.Any(), models.Metrics{
+					ID:    "nonexistent",
+					MType: "gauge",
+				}).Return(models.Metrics{}, service.ErrNotFound)
 			},
 			want: want{
 				code: http.StatusNotFound,
-				body: get.ErrNotFound.Error(),
+				body: service.ErrNotFound.Error(),
 			},
 		},
 		{
@@ -134,12 +162,15 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "nonexistent",
 				MType: "counter",
 			},
-			setup: func(ms *repomock.MockMetricStorage) {
-				ms.EXPECT().GetCounter(gomock.Any(), "nonexistent").Return(int64(0), get.ErrNotFound)
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetMetric(gomock.Any(), models.Metrics{
+					ID:    "nonexistent",
+					MType: "counter",
+				}).Return(models.Metrics{}, service.ErrNotFound)
 			},
 			want: want{
 				code: http.StatusNotFound,
-				body: get.ErrNotFound.Error(),
+				body: service.ErrNotFound.Error(),
 			},
 		},
 		{
@@ -150,9 +181,15 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 				ID:    "someMetric",
 				MType: "invalid_type",
 			},
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetMetric(gomock.Any(), models.Metrics{
+					ID:    "someMetric",
+					MType: "invalid_type",
+				}).Return(models.Metrics{}, service.ErrInvalidMetricType)
+			},
 			want: want{
 				code: http.StatusBadRequest,
-				body: get.ErrInvalidMetricType.Error(),
+				body: service.ErrInvalidMetricType.Error(),
 			},
 		},
 		{
@@ -176,9 +213,9 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			storage := repomock.NewMockMetricStorage(ctrl)
+			metricsService := portsmock.NewMockServerMetricsService(ctrl)
 			if tt.setup != nil {
-				tt.setup(storage)
+				tt.setup(metricsService)
 			}
 
 			var body *bytes.Reader
@@ -192,7 +229,7 @@ func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 			r := httptest.NewRequest(tt.method, tt.target, body)
 			w := httptest.NewRecorder()
 
-			handler := get.NewGetJSONHandler(storage)
+			handler := get.NewGetJSONHandler(metricsService)
 			mux := http.NewServeMux()
 			mux.Handle("/value", handler)
 			mux.ServeHTTP(w, r)

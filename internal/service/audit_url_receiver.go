@@ -1,4 +1,4 @@
-package audit
+package service
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	agenthttp "github.com/arvaliullin/metrics-collection-service/internal/http"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 )
 
 var (
@@ -14,6 +15,8 @@ var (
 	ErrSendAuditEvent       = fmt.Errorf("не удалось отправить событие аудита")
 	ErrUnexpectedStatusCode = fmt.Errorf("неожиданный код статуса ответа")
 )
+
+var _ ports.AuditObserver = (*URLAuditReceiver)(nil)
 
 // URLAuditReceiver реализует AuditObserver для отправки событий на удаленный сервер.
 type URLAuditReceiver struct {

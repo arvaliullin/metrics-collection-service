@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	ports "github.com/arvaliullin/metrics-collection-service/internal/ports"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -210,4 +211,102 @@ func (m *MockMetricsService) StartReporting(ctx context.Context) error {
 func (mr *MockMetricsServiceMockRecorder) StartReporting(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartReporting", reflect.TypeOf((*MockMetricsService)(nil).StartReporting), ctx)
+}
+
+// MockAuditNotifier is a mock of AuditNotifier interface.
+type MockAuditNotifier struct {
+	ctrl     *gomock.Controller
+	recorder *MockAuditNotifierMockRecorder
+	isgomock struct{}
+}
+
+// MockAuditNotifierMockRecorder is the mock recorder for MockAuditNotifier.
+type MockAuditNotifierMockRecorder struct {
+	mock *MockAuditNotifier
+}
+
+// NewMockAuditNotifier creates a new mock instance.
+func NewMockAuditNotifier(ctrl *gomock.Controller) *MockAuditNotifier {
+	mock := &MockAuditNotifier{ctrl: ctrl}
+	mock.recorder = &MockAuditNotifierMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAuditNotifier) EXPECT() *MockAuditNotifierMockRecorder {
+	return m.recorder
+}
+
+// NotifyAll mocks base method.
+func (m *MockAuditNotifier) NotifyAll(event models.AuditEvent) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "NotifyAll", event)
+}
+
+// NotifyAll indicates an expected call of NotifyAll.
+func (mr *MockAuditNotifierMockRecorder) NotifyAll(event any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyAll", reflect.TypeOf((*MockAuditNotifier)(nil).NotifyAll), event)
+}
+
+// Subscribe mocks base method.
+func (m *MockAuditNotifier) Subscribe(observer ports.AuditObserver) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Subscribe", observer)
+}
+
+// Subscribe indicates an expected call of Subscribe.
+func (mr *MockAuditNotifierMockRecorder) Subscribe(observer any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockAuditNotifier)(nil).Subscribe), observer)
+}
+
+// Unsubscribe mocks base method.
+func (m *MockAuditNotifier) Unsubscribe(observer ports.AuditObserver) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Unsubscribe", observer)
+}
+
+// Unsubscribe indicates an expected call of Unsubscribe.
+func (mr *MockAuditNotifierMockRecorder) Unsubscribe(observer any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockAuditNotifier)(nil).Unsubscribe), observer)
+}
+
+// MockAuditObserver is a mock of AuditObserver interface.
+type MockAuditObserver struct {
+	ctrl     *gomock.Controller
+	recorder *MockAuditObserverMockRecorder
+	isgomock struct{}
+}
+
+// MockAuditObserverMockRecorder is the mock recorder for MockAuditObserver.
+type MockAuditObserverMockRecorder struct {
+	mock *MockAuditObserver
+}
+
+// NewMockAuditObserver creates a new mock instance.
+func NewMockAuditObserver(ctrl *gomock.Controller) *MockAuditObserver {
+	mock := &MockAuditObserver{ctrl: ctrl}
+	mock.recorder = &MockAuditObserverMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAuditObserver) EXPECT() *MockAuditObserverMockRecorder {
+	return m.recorder
+}
+
+// Notify mocks base method.
+func (m *MockAuditObserver) Notify(event models.AuditEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Notify", event)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Notify indicates an expected call of Notify.
+func (mr *MockAuditObserverMockRecorder) Notify(event any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockAuditObserver)(nil).Notify), event)
 }

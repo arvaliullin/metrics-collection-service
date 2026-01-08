@@ -6,7 +6,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/arvaliullin/metrics-collection-service/internal/audit"
 	"github.com/arvaliullin/metrics-collection-service/internal/config"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
@@ -15,6 +14,7 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
+	"github.com/arvaliullin/metrics-collection-service/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -35,12 +35,12 @@ type handlers struct {
 
 // ServerApp представляет основное серверное приложение со всеми зависимостями
 type ServerApp struct {
-	Cfg           *config.ServerConfig
-	handlers      *handlers
-	server        *http.Server
-	storage       repository.MetricStorage
-	logger        zerolog.Logger
-	auditNotifier audit.Notifier
+	Cfg          *config.ServerConfig
+	handlers     *handlers
+	server       *http.Server
+	storage      repository.MetricStorage
+	logger       zerolog.Logger
+	auditService *service.AuditService
 }
 
 // New создает новый экземпляр ServerApp с инициализированными зависимостями
@@ -67,18 +67,19 @@ func New(ctx context.Context) *ServerApp {
 		logger.Fatal().Err(err).Msg("failed to initialize storage")
 	}
 
-	auditNotifier := audit.NewAuditNotifier(logger)
-	audit.InitializeReceivers(cfg, auditNotifier, logger)
+	notifier := service.NewAuditNotifier(logger)
+	auditService := service.NewAuditService(notifier, logger)
+	auditService.InitializeReceivers(cfg)
 
 	app := &ServerApp{
-		Cfg:           cfg,
-		storage:       storage,
-		logger:        logger,
-		auditNotifier: auditNotifier,
+		Cfg:          cfg,
+		storage:      storage,
+		logger:       logger,
+		auditService: auditService,
 		handlers: &handlers{
-			update:     update.NewUpdateHandler(storage, auditNotifier),
-			updateJSON: update.NewUpdateJSONHandler(storage, auditNotifier),
-			updates:    updates.NewUpdatesHandler(storage, auditNotifier),
+			update:     update.NewUpdateHandler(storage, auditService),
+			updateJSON: update.NewUpdateJSONHandler(storage, auditService),
+			updates:    updates.NewUpdatesHandler(storage, auditService),
 			get:        get.NewGetHandler(storage),
 			getJSON:    get.NewGetJSONHandler(storage),
 			html:       html.NewHTMLHandler(storage),

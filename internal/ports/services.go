@@ -30,3 +30,19 @@ type MetricsService interface {
 	StartCollection(ctx context.Context) error
 	StartReporting(ctx context.Context) error
 }
+
+// AuditNotifier определяет интерфейс для уведомления о событиях аудита.
+type AuditNotifier interface {
+	// Subscribe добавляет наблюдателя.
+	Subscribe(observer AuditObserver)
+	// Unsubscribe удаляет наблюдателя.
+	Unsubscribe(observer AuditObserver)
+	// NotifyAll уведомляет всех наблюдателей о событии аудита.
+	NotifyAll(event models.AuditEvent)
+}
+
+// AuditObserver определяет интерфейс для наблюдателей аудита.
+type AuditObserver interface {
+	// Notify уведомляет наблюдателя о событии аудита.
+	Notify(event models.AuditEvent) error
+}

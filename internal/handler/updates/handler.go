@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/arvaliullin/metrics-collection-service/internal/audit"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 )
@@ -27,10 +27,10 @@ var (
 
 type UpdatesHandler struct {
 	memStorage    repository.MetricStorage
-	auditNotifier audit.Notifier
+	auditNotifier ports.AuditNotifier
 }
 
-func NewUpdatesHandler(memStorage repository.MetricStorage, auditNotifier audit.Notifier) *UpdatesHandler {
+func NewUpdatesHandler(memStorage repository.MetricStorage, auditNotifier ports.AuditNotifier) *UpdatesHandler {
 	return &UpdatesHandler{
 		memStorage:    memStorage,
 		auditNotifier: auditNotifier,

@@ -1,4 +1,4 @@
-package audit
+package service
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"os"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 )
 
 var (
@@ -13,6 +14,8 @@ var (
 	ErrMarshalAuditEvent = fmt.Errorf("не удалось сериализовать событие аудита")
 	ErrWriteAuditEvent   = fmt.Errorf("не удалось записать событие аудита")
 )
+
+var _ ports.AuditObserver = (*FileAuditReceiver)(nil)
 
 // FileAuditReceiver реализует AuditObserver для записи событий в файл.
 type FileAuditReceiver struct {

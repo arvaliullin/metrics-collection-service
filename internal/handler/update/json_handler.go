@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/arvaliullin/metrics-collection-service/internal/audit"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 )
@@ -24,10 +24,10 @@ var (
 
 type UpdateJSONHandler struct {
 	memStorage    repository.MetricStorage
-	auditNotifier audit.Notifier
+	auditNotifier ports.AuditNotifier
 }
 
-func NewUpdateJSONHandler(memStorage repository.MetricStorage, auditNotifier audit.Notifier) *UpdateJSONHandler {
+func NewUpdateJSONHandler(memStorage repository.MetricStorage, auditNotifier ports.AuditNotifier) *UpdateJSONHandler {
 	return &UpdateJSONHandler{
 		memStorage:    memStorage,
 		auditNotifier: auditNotifier,

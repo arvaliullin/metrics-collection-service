@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	http "github.com/arvaliullin/metrics-collection-service/internal/agent/http"
+	http "github.com/arvaliullin/metrics-collection-service/internal/http"
 	gomock "go.uber.org/mock/gomock"
 )
 

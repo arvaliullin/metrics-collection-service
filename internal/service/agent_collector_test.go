@@ -47,4 +47,3 @@ func TestAgentCollector_CollectGopsutilMetrics(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
-

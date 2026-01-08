@@ -3,7 +3,7 @@ package retry
 import (
 	"context"
 
-	agenthttp "github.com/arvaliullin/metrics-collection-service/internal/agent/http"
+	agenthttp "github.com/arvaliullin/metrics-collection-service/internal/http"
 	retryutil "github.com/arvaliullin/metrics-collection-service/internal/utils/retry"
 	"github.com/go-resty/resty/v2"
 )

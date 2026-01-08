@@ -150,4 +150,3 @@ func floatPtr(f float64) *float64 {
 func intPtr(i int64) *int64 {
 	return &i
 }
-

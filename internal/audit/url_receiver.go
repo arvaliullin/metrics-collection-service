@@ -1,36 +1,31 @@
 package audit
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
 
+	agenthttp "github.com/arvaliullin/metrics-collection-service/internal/http"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 )
 
 var (
 	ErrMarshalAuditEventURL = fmt.Errorf("не удалось сериализовать событие аудита")
-	ErrCreateRequest        = fmt.Errorf("не удалось создать HTTP-запрос")
 	ErrSendAuditEvent       = fmt.Errorf("не удалось отправить событие аудита")
 	ErrUnexpectedStatusCode = fmt.Errorf("неожиданный код статуса ответа")
 )
 
 // URLAuditReceiver реализует AuditObserver для отправки событий на удаленный сервер.
 type URLAuditReceiver struct {
-	url     string
-	client  *http.Client
-	timeout time.Duration
+	url        string
+	httpClient agenthttp.HTTPClient
 }
 
 // NewURLAuditReceiver создает новый экземпляр URLAuditReceiver.
-func NewURLAuditReceiver(url string) *URLAuditReceiver {
-	timeout := 5 * time.Second
+func NewURLAuditReceiver(url string, httpClient agenthttp.HTTPClient) *URLAuditReceiver {
 	return &URLAuditReceiver{
-		url:     url,
-		client:  &http.Client{Timeout: timeout},
-		timeout: timeout,
+		url:        url,
+		httpClient: httpClient,
 	}
 }
 
@@ -41,21 +36,17 @@ func (r *URLAuditReceiver) Notify(event models.AuditEvent) error {
 		return fmt.Errorf("%w: %w", ErrMarshalAuditEventURL, err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, r.url, bytes.NewBuffer(data))
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrCreateRequest, err)
+	headers := map[string]string{
+		"Content-Type": "application/json",
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := r.client.Do(req)
+	resp, err := r.httpClient.Post(context.Background(), r.url, data, headers)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrSendAuditEvent, err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("%w: %d", ErrUnexpectedStatusCode, resp.StatusCode)
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		return fmt.Errorf("%w: %d", ErrUnexpectedStatusCode, resp.StatusCode())
 	}
 
 	return nil

@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
-	agenthttp "github.com/arvaliullin/metrics-collection-service/internal/agent/http"
-	httpretry "github.com/arvaliullin/metrics-collection-service/internal/agent/http/retry"
+	http "github.com/arvaliullin/metrics-collection-service/internal/http"
+	httpretry "github.com/arvaliullin/metrics-collection-service/internal/http/retry"
 	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
 	"github.com/arvaliullin/metrics-collection-service/internal/service"
@@ -40,13 +40,13 @@ func New(ctx context.Context) *Agent {
 	restyClient := resty.New()
 	retryStrategy := retryutil.NewStrategy(
 		retryutil.DefaultDelays,
-		networkRetryPredicate,
+		http.NetworkRetryPredicate,
 	)
 	httpClient := httpretry.NewHTTPRetryClient(restyClient, retryStrategy)
 
 	metricsStorage := memory.NewRepository()
 	collector := service.NewAgentCollector(metricsStorage)
-	metricsSender := agenthttp.NewHTTPMetricsSender(httpClient, cfg.GetAddress(), cfg.Key)
+	metricsSender := http.NewHTTPMetricsSender(httpClient, cfg.GetAddress(), cfg.Key)
 	reporter := service.NewAgentReporter(metricsSender, metricsStorage, logger)
 	metricsService := service.NewAgentService(
 		collector,

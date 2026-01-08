@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	agenthttp "github.com/arvaliullin/metrics-collection-service/internal/agent/http"
-	agenthttpmock "github.com/arvaliullin/metrics-collection-service/internal/agent/http/mock"
+	agenthttp "github.com/arvaliullin/metrics-collection-service/internal/http"
+	agenthttpmock "github.com/arvaliullin/metrics-collection-service/internal/http/mock"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"go.uber.org/mock/gomock"
 )

@@ -1,4 +1,4 @@
-package agent
+package http
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"syscall"
 )
 
-// networkRetryPredicate определяет, можно ли повторить сетевую попытку агента.
-func networkRetryPredicate(err error) bool {
+// NetworkRetryPredicate определяет, можно ли повторить сетевую попытку.
+func NetworkRetryPredicate(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -30,7 +30,7 @@ func networkRetryPredicate(err error) bool {
 
 	var urlErr *url.Error
 	if errors.As(err, &urlErr) && urlErr.Err != nil {
-		return networkRetryPredicate(urlErr.Err)
+		return NetworkRetryPredicate(urlErr.Err)
 	}
 
 	return false

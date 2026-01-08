@@ -63,4 +63,3 @@ func (r *AgentReporter) resetCounters(ctx context.Context, metrics []models.Metr
 		}
 	}
 }
-

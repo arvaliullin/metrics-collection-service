@@ -29,7 +29,7 @@ func NewGetJSONHandler(metricsService ports.ServerMetricsService) *GetJSONHandle
 // @Tags metrics
 // @Accept json
 // @Produce json
-// @Param metric body models.Metrics true "Метрика для получения" example({"id":"Alloc","type":"gauge"})
+// @Param metric body models.Metrics true "Метрика для получения"
 // @Success 200 {object} object "Метрика с текущим значением"
 // @Failure 400 {string} string "Некорректный запрос"
 // @Failure 404 {string} string "Метрика не найдена"

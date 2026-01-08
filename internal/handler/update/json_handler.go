@@ -32,7 +32,7 @@ func NewUpdateJSONHandler(metricsService ports.ServerMetricsService, auditNotifi
 // @Tags metrics
 // @Accept json
 // @Produce json
-// @Param metric body models.Metrics true "Метрика для обновления" example({"id":"Alloc","type":"gauge","value":1024000.0})
+// @Param metric body models.Metrics true "Метрика для обновления"
 // @Success 200 {object} object "Обновленная метрика"
 // @Failure 400 {string} string "Некорректный запрос"
 // @Failure 404 {string} string "Метрика не найдена"

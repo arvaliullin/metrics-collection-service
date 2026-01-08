@@ -115,3 +115,7 @@ logs:
 .PHONY: migration-create
 migration-create:
 	goose -dir migrations -s create create_metrics sql
+
+.PHONY: psql
+psql:
+	- PGPASSWORD=postgres_password psql -h localhost -p 5432 -U postgres_user -d postgres_db

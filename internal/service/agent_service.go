@@ -52,7 +52,10 @@ func (s *AgentService) StartReporting(ctx context.Context) error {
 
 	for range s.rateLimit {
 		wg.Add(1)
-		go s.worker(ctx, jobs, &wg)
+		go func() {
+			defer wg.Done()
+			s.worker(ctx, jobs)
+		}()
 	}
 
 	wg.Add(1)
@@ -92,9 +95,7 @@ func (s *AgentService) reportingLoop(ctx context.Context, jobs chan<- models.Met
 }
 
 // worker обрабатывает задачи из канала jobs.
-func (s *AgentService) worker(ctx context.Context, jobs <-chan models.MetricsBatch, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (s *AgentService) worker(ctx context.Context, jobs <-chan models.MetricsBatch) {
 	for {
 		select {
 		case <-ctx.Done():

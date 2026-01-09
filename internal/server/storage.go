@@ -1,10 +1,9 @@
-package service
+package server
 
 import (
 	"context"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/config"
-	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
@@ -14,18 +13,9 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var _ ports.StorageService = (*StorageService)(nil)
-
-// StorageService реализует создание хранилища метрик на основе конфигурации.
-type StorageService struct{}
-
-// NewStorageService создает новый экземпляр StorageService.
-func NewStorageService() *StorageService {
-	return &StorageService{}
-}
-
-// CreateStorage выбирает и инициализирует хранилище метрик на основе конфигурации.
-func (s *StorageService) CreateStorage(
+// NewStorage выбирает и инициализирует подходящее хранилище (postgres, file или memory)
+// в зависимости от параметров конфигурации.
+func NewStorage(
 	ctx context.Context,
 	cfg *config.ServerConfig,
 	logger zerolog.Logger,

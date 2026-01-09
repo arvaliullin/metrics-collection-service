@@ -63,8 +63,7 @@ func New(ctx context.Context) *ServerApp {
 		Str("key", cfg.Key).
 		Msg("server configuration loaded")
 
-	storageService := service.NewStorageService()
-	storage, err := storageService.CreateStorage(ctx, cfg, logger)
+	storage, err := NewStorage(ctx, cfg, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to initialize storage")
 	}

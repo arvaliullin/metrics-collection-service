@@ -3,10 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/arvaliullin/metrics-collection-service/internal/config"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
-	"github.com/rs/zerolog"
 )
 
 //go:generate mockgen -source=services.go -destination=mock/services_mock.go -package=portsmock
@@ -68,10 +65,4 @@ type ServerMetricsService interface {
 	BatchUpdate(ctx context.Context, metrics []models.Metrics) ([]models.Metrics, error)
 	// GetAllMetrics получает все метрики (gauges и counters).
 	GetAllMetrics(ctx context.Context) (gauges []models.Metrics, counters []models.Metrics, err error)
-}
-
-// StorageService определяет интерфейс для создания хранилища метрик.
-type StorageService interface {
-	// CreateStorage создает хранилище метрик на основе конфигурации.
-	CreateStorage(ctx context.Context, cfg *config.ServerConfig, logger zerolog.Logger) (repository.MetricStorage, error)
 }

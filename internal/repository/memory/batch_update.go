@@ -15,8 +15,14 @@ func (r *Repository) BatchUpdate(ctx context.Context, metrics []models.Metrics) 
 		metric := &metrics[i]
 		switch metric.MType {
 		case models.Gauge:
+			if metric.Value == nil {
+				continue
+			}
 			r.updateGauge(metric)
 		case models.Counter:
+			if metric.Delta == nil && metric.Value == nil {
+				continue
+			}
 			r.updateCounter(metric)
 		}
 	}
@@ -26,19 +32,11 @@ func (r *Repository) BatchUpdate(ctx context.Context, metrics []models.Metrics) 
 
 // updateGauge обновляет метрику типа Gauge, минимизируя аллокации.
 func (r *Repository) updateGauge(metric *models.Metrics) {
-	if metric.Value == nil {
-		return
-	}
-
 	r.gauge[metric.ID] = *metric.Value
 }
 
 // updateCounter обновляет метрику типа Counter, минимизируя аллокации.
 func (r *Repository) updateCounter(metric *models.Metrics) {
-	if metric.Delta == nil && metric.Value == nil {
-		return
-	}
-
 	delta := r.extractDelta(metric)
 	r.counter[metric.ID] += delta
 }

@@ -8,7 +8,6 @@ import (
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	portsmock "github.com/arvaliullin/metrics-collection-service/internal/ports/mock"
 	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
-	"github.com/rs/zerolog"
 	"go.uber.org/mock/gomock"
 )
 
@@ -34,8 +33,7 @@ func TestAgentReporter_BuildBatch(t *testing.T) {
 		AllCounters(gomock.Any()).
 		Return(counters)
 
-	logger := zerolog.Nop()
-	reporter := NewAgentReporter(mockSender, mockStorage, logger)
+	reporter := NewAgentReporter(mockSender, mockStorage)
 
 	batch, err := reporter.BuildBatch(context.Background())
 	if err != nil {
@@ -62,8 +60,7 @@ func TestAgentReporter_BuildBatch_Empty(t *testing.T) {
 		AllCounters(gomock.Any()).
 		Return([]models.Metrics{})
 
-	logger := zerolog.Nop()
-	reporter := NewAgentReporter(mockSender, mockStorage, logger)
+	reporter := NewAgentReporter(mockSender, mockStorage)
 
 	batch, err := reporter.BuildBatch(context.Background())
 	if err != nil {
@@ -94,8 +91,7 @@ func TestAgentReporter_ReportBatch_Success(t *testing.T) {
 		ResetCounter(gomock.Any(), "counter1").
 		Times(1)
 
-	logger := zerolog.Nop()
-	reporter := NewAgentReporter(mockSender, mockStorage, logger)
+	reporter := NewAgentReporter(mockSender, mockStorage)
 
 	err := reporter.ReportBatch(context.Background(), metrics)
 	if err != nil {
@@ -118,8 +114,7 @@ func TestAgentReporter_ReportBatch_SenderError(t *testing.T) {
 		Send(gomock.Any(), metrics).
 		Return(errors.New("sender error"))
 
-	logger := zerolog.Nop()
-	reporter := NewAgentReporter(mockSender, mockStorage, logger)
+	reporter := NewAgentReporter(mockSender, mockStorage)
 
 	err := reporter.ReportBatch(context.Background(), metrics)
 	if err == nil {
@@ -134,8 +129,7 @@ func TestAgentReporter_ReportBatch_EmptyMetrics(t *testing.T) {
 	mockStorage := repomock.NewMockMetricStorage(ctrl)
 	mockSender := portsmock.NewMockMetricsSender(ctrl)
 
-	logger := zerolog.Nop()
-	reporter := NewAgentReporter(mockSender, mockStorage, logger)
+	reporter := NewAgentReporter(mockSender, mockStorage)
 
 	err := reporter.ReportBatch(context.Background(), nil)
 	if err != nil {

@@ -47,7 +47,7 @@ func New(ctx context.Context) *Agent {
 	metricsStorage := memory.NewRepository()
 	collector := service.NewAgentCollector(metricsStorage)
 	metricsSender := http.NewHTTPMetricsSender(httpClient, cfg.GetAddress(), cfg.Key)
-	reporter := service.NewAgentReporter(metricsSender, metricsStorage, logger)
+	reporter := service.NewAgentReporter(metricsSender, metricsStorage)
 	metricsService := service.NewAgentService(
 		collector,
 		reporter,

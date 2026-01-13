@@ -6,22 +6,19 @@ import (
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
-	"github.com/rs/zerolog"
 )
 
 // AgentReporter реализует MetricsReporter для отправки метрик.
 type AgentReporter struct {
 	sender  ports.MetricsSender
 	storage repository.MetricStorage
-	logger  zerolog.Logger
 }
 
 // NewAgentReporter создаёт новый экземпляр AgentReporter.
-func NewAgentReporter(sender ports.MetricsSender, storage repository.MetricStorage, logger zerolog.Logger) *AgentReporter {
+func NewAgentReporter(sender ports.MetricsSender, storage repository.MetricStorage) *AgentReporter {
 	return &AgentReporter{
 		sender:  sender,
 		storage: storage,
-		logger:  logger,
 	}
 }
 

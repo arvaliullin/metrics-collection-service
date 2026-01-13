@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/config"
@@ -11,10 +12,14 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
+	"github.com/arvaliullin/metrics-collection-service/internal/http/middleware"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
+	"github.com/arvaliullin/metrics-collection-service/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "github.com/arvaliullin/metrics-collection-service/docs"
 )
 
 // handlers содержит все HTTP обработчики приложения
@@ -30,11 +35,12 @@ type handlers struct {
 
 // ServerApp представляет основное серверное приложение со всеми зависимостями
 type ServerApp struct {
-	Cfg      *config.ServerConfig
-	handlers *handlers
-	server   *http.Server
-	storage  repository.MetricStorage
-	logger   zerolog.Logger
+	Cfg          *config.ServerConfig
+	handlers     *handlers
+	server       *http.Server
+	storage      repository.MetricStorage
+	logger       zerolog.Logger
+	auditService *service.AuditService
 }
 
 // New создает новый экземпляр ServerApp с инициализированными зависимостями
@@ -56,22 +62,29 @@ func New(ctx context.Context) *ServerApp {
 		Str("key", cfg.Key).
 		Msg("server configuration loaded")
 
-	storage, err := createStorage(ctx, cfg, logger)
+	storage, err := NewStorage(ctx, cfg, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to initialize storage")
 	}
 
+	notifier := service.NewAuditNotifier(logger)
+	auditService := service.NewAuditService(notifier, logger)
+	auditService.InitializeReceivers(cfg)
+
+	metricsService := service.NewServerMetricsService(storage, logger)
+
 	app := &ServerApp{
-		Cfg:     cfg,
-		storage: storage,
-		logger:  logger,
+		Cfg:          cfg,
+		storage:      storage,
+		logger:       logger,
+		auditService: auditService,
 		handlers: &handlers{
-			update:     update.NewUpdateHandler(storage),
-			updateJSON: update.NewUpdateJSONHandler(storage),
-			updates:    updates.NewUpdatesHandler(storage),
-			get:        get.NewGetHandler(storage),
-			getJSON:    get.NewGetJSONHandler(storage),
-			html:       html.NewHTMLHandler(storage),
+			update:     update.NewUpdateHandler(metricsService, auditService),
+			updateJSON: update.NewUpdateJSONHandler(metricsService, auditService),
+			updates:    updates.NewUpdatesHandler(metricsService, auditService),
+			get:        get.NewGetHandler(metricsService),
+			getJSON:    get.NewGetJSONHandler(metricsService),
+			html:       html.NewHTMLHandler(metricsService),
 			ping:       ping.NewPingHandler(storage),
 		},
 	}
@@ -89,11 +102,11 @@ func (a *ServerApp) Logger() *zerolog.Logger {
 // setupRouter настраивает HTTP маршруты
 func (a *ServerApp) setupRouter() {
 	router := chi.NewRouter()
-	router.Use(HashValidationMiddleware(a.Cfg.Key, a.logger))
-	router.Use(GzipDecompressMiddleware())
-	router.Use(HashResponseMiddleware(a.Cfg.Key, a.logger))
-	router.Use(GzipCompressMiddleware())
-	router.Use(loggingMiddleware(a.logger))
+	router.Use(middleware.HashValidationMiddleware(a.Cfg.Key, a.logger))
+	router.Use(middleware.GzipDecompressMiddleware())
+	router.Use(middleware.HashResponseMiddleware(a.Cfg.Key, a.logger))
+	router.Use(middleware.GzipCompressMiddleware())
+	router.Use(middleware.LoggingMiddleware(a.logger))
 
 	router.Handle(`POST /update/{type}/{id}/{value}`, a.handlers.update)
 	router.Handle(`GET /value/{type}/{id}`, a.handlers.get)
@@ -106,6 +119,8 @@ func (a *ServerApp) setupRouter() {
 	router.Handle(`POST /value/`, a.handlers.getJSON)
 	router.Handle(`GET /ping`, a.handlers.ping)
 	router.Handle(`GET /`, a.handlers.html)
+	router.Get("/swagger/*", httpSwagger.WrapHandler)
+	router.Mount("/debug/pprof/", http.DefaultServeMux)
 
 	a.server = &http.Server{
 		Addr:    a.Cfg.Address,
@@ -133,10 +148,8 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		a.logger.Error().Err(err).Msg("error shutting down server")
 	}
 
-	if fileStorage, ok := a.storage.(*file.Repository); ok {
-		if err := fileStorage.Close(); err != nil {
-			return err
-		}
+	if err := a.storage.Close(); err != nil {
+		return err
 	}
 
 	return nil

@@ -6,9 +6,10 @@ import (
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
-	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
-	"github.com/golang/mock/gomock"
+	portsmock "github.com/arvaliullin/metrics-collection-service/internal/ports/mock"
+	"github.com/arvaliullin/metrics-collection-service/internal/service"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetHandler_ServeHTTP(t *testing.T) {
@@ -21,13 +22,13 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 	tests := []struct {
 		name  string
 		path  string
-		setup func(*repomock.MockMetricStorage)
+		setup func(*portsmock.MockServerMetricsService)
 		want  want
 	}{
 		{
 			name: "test #1: valid gauge retrieval",
 			path: "/gauge/someMetric",
-			setup: func(ms *repomock.MockMetricStorage) {
+			setup: func(ms *portsmock.MockServerMetricsService) {
 				ms.EXPECT().GetGauge(gomock.Any(), "someMetric").Return(3.14, nil)
 			},
 			want: want{
@@ -39,7 +40,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #2: valid counter retrieval",
 			path: "/counter/counterMetric",
-			setup: func(ms *repomock.MockMetricStorage) {
+			setup: func(ms *portsmock.MockServerMetricsService) {
 				ms.EXPECT().GetCounter(gomock.Any(), "counterMetric").Return(int64(42), nil)
 			},
 			want: want{
@@ -51,23 +52,23 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #3: gauge not found",
 			path: "/gauge/nonexistent",
-			setup: func(ms *repomock.MockMetricStorage) {
-				ms.EXPECT().GetGauge(gomock.Any(), "nonexistent").Return(0.0, get.ErrNotFound)
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetGauge(gomock.Any(), "nonexistent").Return(0.0, service.ErrNotFound)
 			},
 			want: want{
 				code: http.StatusNotFound,
-				body: get.ErrNotFound.Error(),
+				body: service.ErrNotFound.Error(),
 			},
 		},
 		{
 			name: "test #4: counter not found",
 			path: "/counter/nonexistent",
-			setup: func(ms *repomock.MockMetricStorage) {
-				ms.EXPECT().GetCounter(gomock.Any(), "nonexistent").Return(int64(0), get.ErrNotFound)
+			setup: func(ms *portsmock.MockServerMetricsService) {
+				ms.EXPECT().GetCounter(gomock.Any(), "nonexistent").Return(int64(0), service.ErrNotFound)
 			},
 			want: want{
 				code: http.StatusNotFound,
-				body: get.ErrNotFound.Error(),
+				body: service.ErrNotFound.Error(),
 			},
 		},
 		{
@@ -81,7 +82,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #6: gauge with zero value",
 			path: "/gauge/zeroMetric",
-			setup: func(ms *repomock.MockMetricStorage) {
+			setup: func(ms *portsmock.MockServerMetricsService) {
 				ms.EXPECT().GetGauge(gomock.Any(), "zeroMetric").Return(0.0, nil)
 			},
 			want: want{
@@ -93,7 +94,7 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		{
 			name: "test #7: counter with zero value",
 			path: "/counter/zeroCounter",
-			setup: func(ms *repomock.MockMetricStorage) {
+			setup: func(ms *portsmock.MockServerMetricsService) {
 				ms.EXPECT().GetCounter(gomock.Any(), "zeroCounter").Return(int64(0), nil)
 			},
 			want: want{
@@ -109,15 +110,15 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			storage := repomock.NewMockMetricStorage(ctrl)
+			metricsService := portsmock.NewMockServerMetricsService(ctrl)
 			if tt.setup != nil {
-				tt.setup(storage)
+				tt.setup(metricsService)
 			}
 
 			r := httptest.NewRequest(http.MethodGet, tt.path, nil)
 			w := httptest.NewRecorder()
 
-			handler := get.NewGetHandler(storage)
+			handler := get.NewGetHandler(metricsService)
 			mux := http.NewServeMux()
 			mux.Handle("/{type}/{id}", handler)
 			mux.ServeHTTP(w, r)
@@ -137,12 +138,12 @@ func TestGetHandler_MissingID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	storage := repomock.NewMockMetricStorage(ctrl)
+	metricsService := portsmock.NewMockServerMetricsService(ctrl)
 
 	r := httptest.NewRequest(http.MethodGet, "/gauge", nil)
 	w := httptest.NewRecorder()
 
-	handler := get.NewGetHandler(storage)
+	handler := get.NewGetHandler(metricsService)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/gauge", func(w http.ResponseWriter, r *http.Request) {
@@ -154,5 +155,5 @@ func TestGetHandler_MissingID(t *testing.T) {
 	mux.ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), get.ErrNotFound.Error())
+	assert.Contains(t, w.Body.String(), service.ErrNotFound.Error())
 }

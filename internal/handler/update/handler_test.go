@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/update"
-	repomock "github.com/arvaliullin/metrics-collection-service/internal/repository/mock"
-	"github.com/golang/mock/gomock"
+	portsmock "github.com/arvaliullin/metrics-collection-service/internal/ports/mock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestUpdateHandler_ServeHTTP(t *testing.T) {
@@ -22,15 +22,16 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 		name   string
 		method string
 		target string
-		setup  func(*repomock.MockMetricStorage)
+		setup  func(*portsmock.MockServerMetricsService, *portsmock.MockAuditNotifier)
 		want   want
 	}{
 		{
 			name:   "test #1: valid counter",
 			method: http.MethodPost,
 			target: "/update/counter/someMetric/527",
-			setup: func(ms *repomock.MockMetricStorage) {
-				ms.EXPECT().AddCounter(gomock.Any(), "someMetric", int64(527))
+			setup: func(ms *portsmock.MockServerMetricsService, an *portsmock.MockAuditNotifier) {
+				ms.EXPECT().UpdateCounter(gomock.Any(), "someMetric", int64(527)).Return(nil)
+				an.EXPECT().NotifyAll(gomock.Any()).Times(1)
 			},
 			want: want{
 				code:        http.StatusOK,
@@ -51,8 +52,9 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			name:   "test #3: valid gauge",
 			method: http.MethodPost,
 			target: "/update/gauge/gauage_1/3.14",
-			setup: func(ms *repomock.MockMetricStorage) {
-				ms.EXPECT().UpdateGauge(gomock.Any(), "gauage_1", 3.14)
+			setup: func(ms *portsmock.MockServerMetricsService, an *portsmock.MockAuditNotifier) {
+				ms.EXPECT().UpdateGauge(gomock.Any(), "gauage_1", 3.14).Return(nil)
+				an.EXPECT().NotifyAll(gomock.Any()).Times(1)
 			},
 			want: want{
 				code:        http.StatusOK,
@@ -99,12 +101,13 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			storage := repomock.NewMockMetricStorage(ctrl)
+			metricsService := portsmock.NewMockServerMetricsService(ctrl)
+			auditNotifier := portsmock.NewMockAuditNotifier(ctrl)
 			if tt.setup != nil {
-				tt.setup(storage)
+				tt.setup(metricsService, auditNotifier)
 			}
 
-			handler := update.NewUpdateHandler(storage)
+			handler := update.NewUpdateHandler(metricsService, auditNotifier)
 			mux := http.NewServeMux()
 
 			mux.Handle(`/update/{type}/{id}/{value}`, handler)

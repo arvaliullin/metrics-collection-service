@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	"github.com/jackc/pgx/v5"
@@ -26,7 +25,7 @@ func (r *Repository) GetGauge(ctx context.Context, id string) (float64, error) {
 	var v float64
 	if err := r.pool.QueryRow(ctx, query, id).Scan(&v); err != nil {
 		if err == pgx.ErrNoRows {
-			return 0, fmt.Errorf("gauge %q not found", id)
+			return 0, &GaugeNotFoundError{ID: id}
 		}
 		return 0, err
 	}
@@ -39,7 +38,7 @@ func (r *Repository) GetCounter(ctx context.Context, id string) (int64, error) {
 	var v int64
 	if err := r.pool.QueryRow(ctx, query, id).Scan(&v); err != nil {
 		if err == pgx.ErrNoRows {
-			return 0, fmt.Errorf("counter %q not found", id)
+			return 0, &CounterNotFoundError{ID: id}
 		}
 		return 0, err
 	}

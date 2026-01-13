@@ -13,32 +13,35 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// createStorage выбирает и инициализирует хранилище метрик
-func createStorage(
+// NewStorage выбирает и инициализирует подходящее хранилище (postgres, file или memory)
+// в зависимости от параметров конфигурации.
+func NewStorage(
 	ctx context.Context,
 	cfg *config.ServerConfig,
 	logger zerolog.Logger,
 ) (repository.MetricStorage, error) {
 	if cfg.DatabaseConfig.Dsn != "" {
-		psqlRepo, err := postgres.NewRepository(ctx, &cfg.DatabaseConfig)
+		if err := postgres.RunMigrations(ctx, cfg.DatabaseConfig.Dsn); err != nil {
+			return nil, err
+		}
+
+		pool, err := postgres.NewPool(ctx, cfg.DatabaseConfig.Dsn)
 		if err != nil {
 			return nil, err
 		}
 
 		retryStrategy := retryutil.NewStrategy(
 			retryutil.DefaultDelays,
-			retryrepo.IsConnectionRetryable,
+			postgres.IsConnectionRetryable,
 		)
 
-		storage, err := retryrepo.NewPostgresAdapter(psqlRepo, retryStrategy)
-		if err != nil {
-			return nil, err
-		}
+		retryClient := retryrepo.NewPostgresRetryClient(pool, retryStrategy)
+		psqlRepo := postgres.NewRepository(retryClient)
 
 		logger.Info().
 			Str("backend", "postgres").
 			Msg("storage initialized")
-		return storage, nil
+		return psqlRepo, nil
 	}
 
 	if cfg.FileStoragePath != "" {

@@ -85,8 +85,8 @@ func TestDoWithRetryNilStrategy(t *testing.T) {
 	err := strategy.DoWithRetry(context.Background(), func(context.Context) error {
 		return nil
 	})
-	if err == nil || err.Error() != "retry strategy is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrStrategyNil) {
+		t.Fatalf("expected ErrStrategyNil, got %v", err)
 	}
 }
 

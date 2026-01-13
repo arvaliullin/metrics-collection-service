@@ -4,32 +4,41 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
+	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 )
 
 var (
-	ErrMethodNotSupported  = errors.New("метод не поддерживается")
-	ErrInvalidJSON         = errors.New("некорректный JSON")
-	ErrEmptyPayload        = errors.New("пустой список метрик")
-	ErrMissingID           = errors.New("не указано имя метрики")
-	ErrMissingType         = errors.New("не указан тип метрики")
-	ErrMissingGaugeValue   = errors.New("не указано значение для gauge")
-	ErrMissingCounterDelta = errors.New(
-		"не указана дельта для counter",
-	)
-	ErrInvalidMetricType = errors.New("некорректный тип метрики")
+	ErrMethodNotSupported = errors.New("метод не поддерживается")
+	ErrInvalidJSON        = errors.New("некорректный JSON")
 )
 
 type UpdatesHandler struct {
-	memStorage repository.MetricStorage
+	metricsService ports.ServerMetricsService
+	auditNotifier  ports.AuditNotifier
 }
 
-func NewUpdatesHandler(memStorage repository.MetricStorage) *UpdatesHandler {
-	return &UpdatesHandler{memStorage: memStorage}
+func NewUpdatesHandler(metricsService ports.ServerMetricsService, auditNotifier ports.AuditNotifier) *UpdatesHandler {
+	return &UpdatesHandler{
+		metricsService: metricsService,
+		auditNotifier:  auditNotifier,
+	}
 }
 
+// @Summary Пакетное обновление метрик
+// @Description Обновляет несколько метрик за один запрос в формате JSON
+// @Tags metrics
+// @Accept json
+// @Produce json
+// @Param metrics body []models.Metrics true "Массив метрик для обновления"
+// @Success 200 {array} object "Обновленные метрики"
+// @Failure 400 {string} string "Некорректный запрос"
+// @Failure 405 {string} string "Метод не поддерживается"
+// @Failure 500 {string} string "Внутренняя ошибка сервера"
+// @Router /updates [post]
 func (h *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, ErrMethodNotSupported.Error(), http.StatusMethodNotAllowed)
@@ -47,55 +56,27 @@ func (h *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(metrics) == 0 {
-		http.Error(w, ErrEmptyPayload.Error(), http.StatusBadRequest)
+	updatedMetrics, err := h.metricsService.BatchUpdate(r.Context(), metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	for i := range metrics {
-		if err := validateMetric(&metrics[i]); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+	if h.auditNotifier != nil {
+		ipAddress := utils.ExtractIPAddress(r)
+		metricNames := make([]string, 0, len(updatedMetrics))
+		for _, metric := range updatedMetrics {
+			metricNames = append(metricNames, metric.ID)
 		}
-	}
-
-	if err := h.memStorage.BatchUpdate(r.Context(), metrics); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		event := models.AuditEvent{
+			TS:        time.Now().Unix(),
+			Metrics:   metricNames,
+			IPAddress: ipAddress,
+		}
+		h.auditNotifier.NotifyAll(event)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(metrics)
-}
-
-func validateMetric(metric *models.Metrics) error {
-	if metric.ID == "" {
-		return ErrMissingID
-	}
-
-	if metric.MType == "" {
-		return ErrMissingType
-	}
-
-	switch metric.MType {
-	case models.Gauge:
-		if metric.Value == nil {
-			return ErrMissingGaugeValue
-		}
-	case models.Counter:
-		if metric.Delta == nil {
-			if metric.Value != nil {
-				delta := int64(*metric.Value)
-				metric.Delta = &delta
-				metric.Value = nil
-			} else {
-				return ErrMissingCounterDelta
-			}
-		}
-	default:
-		return ErrInvalidMetricType
-	}
-
-	return nil
+	json.NewEncoder(w).Encode(updatedMetrics)
 }

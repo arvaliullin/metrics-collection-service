@@ -1,3 +1,8 @@
+// @title Metrics Collection Service API
+// @version 1.0
+// @description API для сбора и хранения метрик
+// @host localhost:8080
+// @BasePath /
 package main
 
 import (

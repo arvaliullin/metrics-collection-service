@@ -4,30 +4,32 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
+	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 )
 
 var (
 	ErrMethodNotSupported = fmt.Errorf("метод не поддерживается")
-	ErrNotFound           = fmt.Errorf("метрика с указанным именем не найдена")
 	ErrInvalidMetricValue = fmt.Errorf("некорретное значение метрики")
 	ErrInvalidMetricType  = fmt.Errorf("некорректный тип метрики")
 )
 
 type UpdateHandler struct {
-	memStorage repository.MetricStorage
+	metricsService ports.ServerMetricsService
+	auditNotifier  ports.AuditNotifier
 }
 
-func NewUpdateHandler(memStorage repository.MetricStorage) *UpdateHandler {
+func NewUpdateHandler(metricsService ports.ServerMetricsService, auditNotifier ports.AuditNotifier) *UpdateHandler {
 	return &UpdateHandler{
-		memStorage: memStorage,
+		metricsService: metricsService,
+		auditNotifier:  auditNotifier,
 	}
 }
 
 func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	if r.Method != http.MethodPost {
 		http.Error(w, ErrMethodNotSupported.Error(), http.StatusMethodNotAllowed)
 		return
@@ -37,11 +39,6 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	idMetric := r.PathValue("id")
 	valueStr := r.PathValue("value")
 
-	if idMetric == "" {
-		http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
-		return
-	}
-
 	switch typeMetric {
 	case models.Gauge:
 		gauge, err := strconv.ParseFloat(valueStr, 64)
@@ -49,7 +46,10 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, ErrInvalidMetricValue.Error(), http.StatusBadRequest)
 			return
 		}
-		h.memStorage.UpdateGauge(r.Context(), idMetric, gauge)
+		if err := h.metricsService.UpdateGauge(r.Context(), idMetric, gauge); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 	case models.Counter:
 		counter, err := strconv.ParseInt(valueStr, 10, 64)
@@ -57,11 +57,24 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, ErrInvalidMetricValue.Error(), http.StatusBadRequest)
 			return
 		}
-		h.memStorage.AddCounter(r.Context(), idMetric, counter)
+		if err := h.metricsService.UpdateCounter(r.Context(), idMetric, counter); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 	default:
 		http.Error(w, ErrInvalidMetricType.Error(), http.StatusBadRequest)
 		return
+	}
+
+	if h.auditNotifier != nil {
+		ipAddress := utils.ExtractIPAddress(r)
+		event := models.AuditEvent{
+			TS:        time.Now().Unix(),
+			Metrics:   []string{idMetric},
+			IPAddress: ipAddress,
+		}
+		h.auditNotifier.NotifyAll(event)
 	}
 
 	w.Header().Set("content-type", "text/plain")

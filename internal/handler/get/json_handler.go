@@ -2,28 +2,39 @@ package get
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository"
+	"github.com/arvaliullin/metrics-collection-service/internal/ports"
+	"github.com/arvaliullin/metrics-collection-service/internal/service"
 )
 
 var (
 	ErrInvalidJSON      = fmt.Errorf("некорректный JSON")
-	ErrMissingID        = fmt.Errorf("не указано имя метрики")
-	ErrMissingType      = fmt.Errorf("не указан тип метрики")
 	ErrMethodNotAllowed = fmt.Errorf("метод не поддерживается")
 )
 
 type GetJSONHandler struct {
-	memStorage repository.MetricStorage
+	metricsService ports.ServerMetricsService
 }
 
-func NewGetJSONHandler(memStorage repository.MetricStorage) *GetJSONHandler {
-	return &GetJSONHandler{memStorage: memStorage}
+func NewGetJSONHandler(metricsService ports.ServerMetricsService) *GetJSONHandler {
+	return &GetJSONHandler{metricsService: metricsService}
 }
 
+// @Summary Получение метрики
+// @Description Получает значение метрики (gauge или counter) в формате JSON
+// @Tags metrics
+// @Accept json
+// @Produce json
+// @Param metric body models.Metrics true "Метрика для получения"
+// @Success 200 {object} object "Метрика с текущим значением"
+// @Failure 400 {string} string "Некорректный запрос"
+// @Failure 404 {string} string "Метрика не найдена"
+// @Failure 405 {string} string "Метод не поддерживается"
+// @Router /value [post]
 func (h *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, ErrMethodNotAllowed.Error(), http.StatusMethodNotAllowed)
@@ -41,40 +52,13 @@ func (h *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if metric.ID == "" {
-		http.Error(w, ErrMissingID.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if metric.MType == "" {
-		http.Error(w, ErrMissingType.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var response models.Metrics
-	response.ID = metric.ID
-	response.MType = metric.MType
-
-	switch metric.MType {
-	case models.Gauge:
-		value, err := h.memStorage.GetGauge(r.Context(), metric.ID)
-		if err != nil {
-			http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
-			return
+	response, err := h.metricsService.GetMetric(r.Context(), metric)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+		if errors.Is(err, service.ErrNotFound) {
+			statusCode = http.StatusNotFound
 		}
-		response.Value = &value
-
-	case models.Counter:
-		value, err := h.memStorage.GetCounter(r.Context(), metric.ID)
-		if err != nil {
-			http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
-			return
-		}
-		delta := value
-		response.Delta = &delta
-
-	default:
-		http.Error(w, ErrInvalidMetricType.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
 

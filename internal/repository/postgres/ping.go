@@ -7,11 +7,8 @@ import (
 
 // Ping проверяет доступность соединения с базой данных.
 func (r *Repository) Ping(ctx context.Context) error {
-	if r.pool == nil {
-		return fmt.Errorf("pool undefined")
-	}
-
-	if err := r.pool.Ping(ctx); err != nil {
+	var result int
+	if err := r.pool.QueryRow(ctx, "SELECT 1").Scan(&result); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 	return nil

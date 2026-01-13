@@ -11,46 +11,43 @@ func (r *Repository) BatchUpdate(ctx context.Context, metrics []models.Metrics) 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	for _, metric := range metrics {
+	for i := range metrics {
+		metric := &metrics[i]
 		switch metric.MType {
 		case models.Gauge:
 			if metric.Value == nil {
 				continue
 			}
-			value := *metric.Value
-			r.gauge[metric.ID] = models.Metrics{
-				ID:    metric.ID,
-				MType: models.Gauge,
-				Value: &value,
-			}
+			r.updateGauge(metric)
 		case models.Counter:
-			var delta int64
-			switch {
-			case metric.Delta != nil:
-				delta = *metric.Delta
-			case metric.Value != nil:
-				delta = int64(*metric.Value)
-			default:
+			if metric.Delta == nil && metric.Value == nil {
 				continue
 			}
-
-			var current int64
-			if existing, ok := r.counter[metric.ID]; ok {
-				if existing.Delta != nil {
-					current = *existing.Delta
-				} else if existing.Value != nil {
-					current = int64(*existing.Value)
-				}
-			}
-
-			newDelta := current + delta
-			r.counter[metric.ID] = models.Metrics{
-				ID:    metric.ID,
-				MType: models.Counter,
-				Delta: &newDelta,
-			}
+			r.updateCounter(metric)
 		}
 	}
 
 	return nil
+}
+
+// updateGauge обновляет метрику типа Gauge, минимизируя аллокации.
+func (r *Repository) updateGauge(metric *models.Metrics) {
+	r.gauge[metric.ID] = *metric.Value
+}
+
+// updateCounter обновляет метрику типа Counter, минимизируя аллокации.
+func (r *Repository) updateCounter(metric *models.Metrics) {
+	delta := r.extractDelta(metric)
+	r.counter[metric.ID] += delta
+}
+
+// extractDelta извлекает значение delta из метрики.
+func (r *Repository) extractDelta(metric *models.Metrics) int64 {
+	if metric.Delta != nil {
+		return *metric.Delta
+	}
+	if metric.Value != nil {
+		return int64(*metric.Value)
+	}
+	return 0
 }

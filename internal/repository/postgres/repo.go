@@ -12,12 +12,12 @@ import (
 
 // Repository предоставляет реализацию хранилища метрик на PostgreSQL.
 type Repository struct {
-	client PostgresClient
+	pool PostgresClient
 }
 
 // NewRepository создаёт репозиторий PostgreSQL.
 func NewRepository(client PostgresClient) *Repository {
-	return &Repository{client: client}
+	return &Repository{pool: client}
 }
 
 // RunMigrations применяет миграции к базе данных.

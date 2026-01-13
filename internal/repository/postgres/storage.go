@@ -16,14 +16,14 @@ INSERT INTO metrics_gauge (id, value)
 VALUES ($1, $2)
 ON CONFLICT (id) DO UPDATE SET
 	value = EXCLUDED.value`
-	r.client.Exec(ctx, query, id, newGauge)
+	r.pool.Exec(ctx, query, id, newGauge)
 }
 
 // GetGauge возвращает значение метрики gauge по идентификатору.
 func (r *Repository) GetGauge(ctx context.Context, id string) (float64, error) {
 	const query = `SELECT value FROM metrics_gauge WHERE id = $1`
 	var v float64
-	if err := r.client.QueryRow(ctx, query, id).Scan(&v); err != nil {
+	if err := r.pool.QueryRow(ctx, query, id).Scan(&v); err != nil {
 		if err == pgx.ErrNoRows {
 			return 0, &GaugeNotFoundError{ID: id}
 		}
@@ -36,7 +36,7 @@ func (r *Repository) GetGauge(ctx context.Context, id string) (float64, error) {
 func (r *Repository) GetCounter(ctx context.Context, id string) (int64, error) {
 	const query = `SELECT value FROM metrics_counter WHERE id = $1`
 	var v int64
-	if err := r.client.QueryRow(ctx, query, id).Scan(&v); err != nil {
+	if err := r.pool.QueryRow(ctx, query, id).Scan(&v); err != nil {
 		if err == pgx.ErrNoRows {
 			return 0, &CounterNotFoundError{ID: id}
 		}
@@ -52,7 +52,7 @@ INSERT INTO metrics_counter (id, value)
 VALUES ($1, $2)
 ON CONFLICT (id) DO UPDATE SET
 	value = metrics_counter.value + EXCLUDED.value`
-	r.client.Exec(ctx, query, id, newCounter)
+	r.pool.Exec(ctx, query, id, newCounter)
 }
 
 // AddCounterValue увеличивает значение счётчика на delta.
@@ -63,7 +63,7 @@ func (r *Repository) AddCounterValue(ctx context.Context, id string, delta int64
 // AllCounters возвращает все метрики типа counter с заполненным полем Delta.
 func (r *Repository) AllCounters(ctx context.Context) []models.Metrics {
 	const query = `SELECT id, value FROM metrics_counter`
-	rows, err := r.client.Query(ctx, query)
+	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil
 	}
@@ -91,7 +91,7 @@ func (r *Repository) AllCounters(ctx context.Context) []models.Metrics {
 // AllGauges возвращает все метрики типа gauge с заполненным полем Value.
 func (r *Repository) AllGauges(ctx context.Context) []models.Metrics {
 	const query = `SELECT id, value FROM metrics_gauge`
-	rows, err := r.client.Query(ctx, query)
+	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil
 	}
@@ -123,5 +123,5 @@ INSERT INTO metrics_counter (id, value)
 VALUES ($1, 0)
 ON CONFLICT (id) DO UPDATE SET
 	value = 0`
-	r.client.Exec(ctx, query, id)
+	r.pool.Exec(ctx, query, id)
 }

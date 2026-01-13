@@ -76,4 +76,9 @@ func (c *PostgresRetryClient) Begin(ctx context.Context) (pgx.Tx, error) {
 	return tx, err
 }
 
+// Close закрывает пул соединений PostgreSQL.
+func (c *PostgresRetryClient) Close() {
+	c.pool.Close()
+}
+
 var _ postgres.PostgresClient = (*PostgresRetryClient)(nil)

@@ -20,6 +20,12 @@ func NewRepository(client PostgresClient) *Repository {
 	return &Repository{pool: client}
 }
 
+// Close закрывает пул соединений PostgreSQL.
+func (r *Repository) Close() error {
+	r.pool.Close()
+	return nil
+}
+
 // RunMigrations применяет миграции к базе данных.
 func RunMigrations(ctx context.Context, dsn string) error {
 	db, err := sql.Open("pgx", dsn)

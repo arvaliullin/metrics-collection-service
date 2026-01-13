@@ -57,6 +57,18 @@ func (mr *MockPostgresClientMockRecorder) Begin(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Begin", reflect.TypeOf((*MockPostgresClient)(nil).Begin), ctx)
 }
 
+// Close mocks base method.
+func (m *MockPostgresClient) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockPostgresClientMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPostgresClient)(nil).Close))
+}
+
 // Exec mocks base method.
 func (m *MockPostgresClient) Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 	m.ctrl.T.Helper()

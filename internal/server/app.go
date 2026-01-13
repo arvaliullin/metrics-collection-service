@@ -14,7 +14,6 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/updates"
 	"github.com/arvaliullin/metrics-collection-service/internal/http/middleware"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository"
-	"github.com/arvaliullin/metrics-collection-service/internal/repository/file"
 	"github.com/arvaliullin/metrics-collection-service/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
@@ -149,10 +148,8 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		a.logger.Error().Err(err).Msg("error shutting down server")
 	}
 
-	if fileStorage, ok := a.storage.(*file.Repository); ok {
-		if err := fileStorage.Close(); err != nil {
-			return err
-		}
+	if err := a.storage.Close(); err != nil {
+		return err
 	}
 
 	return nil

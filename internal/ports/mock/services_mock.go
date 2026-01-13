@@ -13,11 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	config "github.com/arvaliullin/metrics-collection-service/internal/config"
 	models "github.com/arvaliullin/metrics-collection-service/internal/model"
 	ports "github.com/arvaliullin/metrics-collection-service/internal/ports"
-	repository "github.com/arvaliullin/metrics-collection-service/internal/repository"
-	zerolog "github.com/rs/zerolog"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -455,43 +452,4 @@ func (m *MockServerMetricsService) UpdateMetric(ctx context.Context, metric mode
 func (mr *MockServerMetricsServiceMockRecorder) UpdateMetric(ctx, metric any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMetric", reflect.TypeOf((*MockServerMetricsService)(nil).UpdateMetric), ctx, metric)
-}
-
-// MockStorageService is a mock of StorageService interface.
-type MockStorageService struct {
-	ctrl     *gomock.Controller
-	recorder *MockStorageServiceMockRecorder
-	isgomock struct{}
-}
-
-// MockStorageServiceMockRecorder is the mock recorder for MockStorageService.
-type MockStorageServiceMockRecorder struct {
-	mock *MockStorageService
-}
-
-// NewMockStorageService creates a new mock instance.
-func NewMockStorageService(ctrl *gomock.Controller) *MockStorageService {
-	mock := &MockStorageService{ctrl: ctrl}
-	mock.recorder = &MockStorageServiceMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStorageService) EXPECT() *MockStorageServiceMockRecorder {
-	return m.recorder
-}
-
-// CreateStorage mocks base method.
-func (m *MockStorageService) CreateStorage(ctx context.Context, cfg *config.ServerConfig, logger zerolog.Logger) (repository.MetricStorage, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateStorage", ctx, cfg, logger)
-	ret0, _ := ret[0].(repository.MetricStorage)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateStorage indicates an expected call of CreateStorage.
-func (mr *MockStorageServiceMockRecorder) CreateStorage(ctx, cfg, logger any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStorage", reflect.TypeOf((*MockStorageService)(nil).CreateStorage), ctx, cfg, logger)
 }

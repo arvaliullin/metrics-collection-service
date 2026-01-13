@@ -118,3 +118,8 @@ func (r *Repository) AllGauges(ctx context.Context) []models.Metrics {
 func (r *Repository) Ping(ctx context.Context) error {
 	return ErrPingNotAvailable
 }
+
+// Close закрывает хранилище. Для in-memory хранилища это no-op.
+func (r *Repository) Close() error {
+	return nil
+}

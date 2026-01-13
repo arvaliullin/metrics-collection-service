@@ -20,4 +20,5 @@ type MetricStorage interface {
 	AllGauges(ctx context.Context) []models.Metrics
 	ResetCounter(ctx context.Context, id string)
 	Ping(ctx context.Context) error
+	Close() error
 }

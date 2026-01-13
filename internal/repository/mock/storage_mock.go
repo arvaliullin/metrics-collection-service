@@ -107,6 +107,20 @@ func (mr *MockMetricStorageMockRecorder) BatchUpdate(ctx, metrics any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchUpdate", reflect.TypeOf((*MockMetricStorage)(nil).BatchUpdate), ctx, metrics)
 }
 
+// Close mocks base method.
+func (m *MockMetricStorage) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockMetricStorageMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockMetricStorage)(nil).Close))
+}
+
 // GetCounter mocks base method.
 func (m *MockMetricStorage) GetCounter(ctx context.Context, id string) (int64, error) {
 	m.ctrl.T.Helper()

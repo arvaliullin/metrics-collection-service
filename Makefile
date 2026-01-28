@@ -50,6 +50,7 @@ install-deps:
 	- go install github.com/pressly/goose/v3/cmd/goose@latest
 	- go install github.com/swaggo/swag/cmd/swag@latest
 	- go install -v golang.org/x/tools/cmd/godoc@latest
+	- go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 
 .PHONY: generate-mocks
 generate-mocks:

@@ -8,6 +8,10 @@ build:
 staticlint:
 	mkdir -p bin && go build -o bin/staticlint ./cmd/staticlint && go vet -vettool=./bin/staticlint ./...
 
+.PHONY: generate-reset
+generate-reset:
+	go run ./cmd/reset .
+
 .PHONY: run
 run:
 	- go run github.com/arvaliullin/metrics-collection-service/cmd/server

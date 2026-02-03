@@ -1,8 +1,9 @@
 .PHONY: build
 build:
 	mkdir -p bin
-	go build -o bin/agent github.com/arvaliullin/metrics-collection-service/cmd/agent
-	go build -o bin/server github.com/arvaliullin/metrics-collection-service/cmd/server
+	BUILD_DATE=$$(date -u +%Y-%m-%d); BUILD_COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo "N/A"); \
+	go build -ldflags "-X main.buildVersion=v0.0.1 -X main.buildDate=$$BUILD_DATE -X main.buildCommit=$$BUILD_COMMIT" -o bin/agent github.com/arvaliullin/metrics-collection-service/cmd/agent; \
+	go build -ldflags "-X main.buildVersion=v0.0.1 -X main.buildDate=$$BUILD_DATE -X main.buildCommit=$$BUILD_COMMIT" -o bin/server github.com/arvaliullin/metrics-collection-service/cmd/server
 
 .PHONY: staticlint
 staticlint:

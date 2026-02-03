@@ -4,6 +4,10 @@ build:
 	go build -o bin/agent github.com/arvaliullin/metrics-collection-service/cmd/agent
 	go build -o bin/server github.com/arvaliullin/metrics-collection-service/cmd/server
 
+.PHONY: staticlint
+staticlint:
+	mkdir -p bin && go build -o bin/staticlint ./cmd/staticlint && go vet -vettool=./bin/staticlint ./...
+
 .PHONY: run
 run:
 	- go run github.com/arvaliullin/metrics-collection-service/cmd/server

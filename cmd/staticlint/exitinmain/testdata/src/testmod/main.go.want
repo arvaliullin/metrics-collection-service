@@ -1,0 +1,1 @@
+testmod/main.go:6:2: прямой вызов os.Exit в main пакета main запрещён

@@ -51,6 +51,7 @@ install-deps:
 	- go install github.com/swaggo/swag/cmd/swag@latest
 	- go install -v golang.org/x/tools/cmd/godoc@latest
 	- go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+	- go install honnef.co/go/tools/cmd/staticcheck@latest
 
 .PHONY: generate-mocks
 generate-mocks:

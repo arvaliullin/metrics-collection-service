@@ -1,4 +1,4 @@
-package main
+package gen
 
 import (
 	"go/token"
@@ -9,7 +9,6 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// resetIface - интерфейс с методом Reset() для проверки типов при генерации.
 var resetIface types.Type
 
 func init() {
@@ -19,18 +18,21 @@ func init() {
 	resetIface.(*types.Interface).Complete()
 }
 
-// hasResetMethod возвращает true, если тип или указатель на него реализует Reset().
 func hasResetMethod(typ types.Type) bool {
 	return types.Implements(typ, resetIface.(*types.Interface)) ||
 		types.Implements(types.NewPointer(typ), resetIface.(*types.Interface))
 }
 
-// samePkg проверяет, принадлежит ли именованный тип указанному пакету.
+func as[T any](v any) (T, bool) {
+	t, ok := v.(T)
+	return t, ok
+}
+
 func samePkg(typ types.Type, pkg *types.Package) bool {
 	if pkg == nil {
 		return false
 	}
-	named, ok := typ.(*types.Named)
+	named, ok := as[*types.Named](typ)
 	if !ok {
 		return false
 	}
@@ -38,7 +40,6 @@ func samePkg(typ types.Type, pkg *types.Package) bool {
 	return obj != nil && obj.Pkg() == pkg
 }
 
-// receiverName возвращает короткое имя приёмника по имени типа (например, ResetableStruct → rs).
 func receiverName(typeName string) string {
 	var b strings.Builder
 	for i, r := range typeName {
@@ -52,7 +53,6 @@ func receiverName(typeName string) string {
 	return b.String()
 }
 
-// pkgName возвращает имя пакета для объявления в сгенерированном файле.
 func pkgName(pkg *packages.Package) string {
 	if pkg.Name != "" {
 		return pkg.Name

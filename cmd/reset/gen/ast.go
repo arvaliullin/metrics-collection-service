@@ -1,4 +1,4 @@
-package main
+package gen
 
 import (
 	"go/ast"
@@ -6,7 +6,6 @@ import (
 	"go/types"
 )
 
-// zeroValueExpr возвращает AST-выражение нулевого значения для заданного типа.
 func zeroValueExpr(t types.Type) ast.Expr {
 	switch t := t.(type) {
 	case *types.Basic:
@@ -30,7 +29,6 @@ func zeroValueExpr(t types.Type) ast.Expr {
 	}
 }
 
-// fieldSelector строит AST селектора поля (recv.fieldName).
 func fieldSelector(recv, fieldName string) *ast.SelectorExpr {
 	return &ast.SelectorExpr{
 		X:   &ast.Ident{Name: recv},
@@ -38,7 +36,6 @@ func fieldSelector(recv, fieldName string) *ast.SelectorExpr {
 	}
 }
 
-// nilCheckStmt строит AST условия "if sel != nil { body }".
 func nilCheckStmt(sel ast.Expr, body ast.Stmt) *ast.IfStmt {
 	return &ast.IfStmt{
 		Cond: &ast.BinaryExpr{
@@ -50,7 +47,6 @@ func nilCheckStmt(sel ast.Expr, body ast.Stmt) *ast.IfStmt {
 	}
 }
 
-// assignStmt строит AST присваивания lhs = rhs.
 func assignStmt(lhs, rhs ast.Expr) *ast.AssignStmt {
 	return &ast.AssignStmt{
 		Lhs: []ast.Expr{lhs},
@@ -59,7 +55,6 @@ func assignStmt(lhs, rhs ast.Expr) *ast.AssignStmt {
 	}
 }
 
-// callResetStmt строит AST вызова recv.Reset().
 func callResetStmt(recv ast.Expr) *ast.ExprStmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
@@ -69,7 +64,6 @@ func callResetStmt(recv ast.Expr) *ast.ExprStmt {
 	}
 }
 
-// typeAssertResetStmt строит AST проверки типа interface{ Reset() } и вызова Reset().
 func typeAssertResetStmt(sel ast.Expr) *ast.IfStmt {
 	interfaceType := &ast.InterfaceType{
 		Methods: &ast.FieldList{
@@ -92,7 +86,6 @@ func typeAssertResetStmt(sel ast.Expr) *ast.IfStmt {
 	}
 }
 
-// typeAssertResetIfStmt оборачивает typeAssertResetStmt в проверку на nil.
 func typeAssertResetIfStmt(sel ast.Expr) *ast.IfStmt {
 	return nilCheckStmt(sel, typeAssertResetStmt(sel))
 }

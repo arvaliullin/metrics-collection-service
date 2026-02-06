@@ -1,4 +1,4 @@
-package main
+package gen
 
 import (
 	"go/ast"
@@ -6,7 +6,6 @@ import (
 	"go/types"
 )
 
-// generateResetBody возвращает список AST-операторов тела метода Reset() для структуры.
 func generateResetBody(recv string, st *types.Struct, pkg *types.Package) []ast.Stmt {
 	var list []ast.Stmt
 	list = append(list, &ast.IfStmt{
@@ -33,7 +32,6 @@ func generateResetBody(recv string, st *types.Struct, pkg *types.Package) []ast.
 	return list
 }
 
-// stmtForField возвращает AST-оператор сброса для одного поля в зависимости от его типа.
 func stmtForField(recv, fieldName string, typ types.Type, sel ast.Expr, pkg *types.Package) ast.Stmt {
 	switch t := typ.Underlying().(type) {
 	case *types.Basic:
@@ -51,16 +49,7 @@ func stmtForField(recv, fieldName string, typ types.Type, sel ast.Expr, pkg *typ
 			},
 		}
 	case *types.Pointer:
-		elem := t.Elem()
-		switch elem.Underlying().(type) {
-		case *types.Basic:
-			return nilCheckStmt(sel, assignStmt(&ast.StarExpr{X: sel}, zeroValueExpr(elem)))
-		default:
-			if samePkg(elem, pkg) || hasResetMethod(elem) {
-				return nilCheckStmt(sel, callResetStmt(sel))
-			}
-			return nilCheckStmt(sel, typeAssertResetStmt(sel))
-		}
+		return stmtForPointerField(t.Elem(), sel, pkg)
 	case *types.Struct:
 		if hasResetMethod(typ) {
 			return callResetStmt(sel)
@@ -70,5 +59,17 @@ func stmtForField(recv, fieldName string, typ types.Type, sel ast.Expr, pkg *typ
 		return typeAssertResetIfStmt(sel)
 	default:
 		return nil
+	}
+}
+
+func stmtForPointerField(elem types.Type, sel ast.Expr, pkg *types.Package) ast.Stmt {
+	switch elem.Underlying().(type) {
+	case *types.Basic:
+		return nilCheckStmt(sel, assignStmt(&ast.StarExpr{X: sel}, zeroValueExpr(elem)))
+	default:
+		if samePkg(elem, pkg) || hasResetMethod(elem) {
+			return nilCheckStmt(sel, callResetStmt(sel))
+		}
+		return nilCheckStmt(sel, typeAssertResetStmt(sel))
 	}
 }

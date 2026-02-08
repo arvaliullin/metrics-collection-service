@@ -4,23 +4,32 @@ import (
 	"go/token"
 	"go/types"
 	"strings"
+	"sync"
 	"unicode"
 
 	"golang.org/x/tools/go/packages"
 )
 
-var resetIface types.Type
+var (
+	resetIface *types.Interface
+	resetOnce  sync.Once
+)
 
-func init() {
-	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	m := types.NewFunc(token.NoPos, nil, "Reset", sig)
-	resetIface = types.NewInterfaceType([]*types.Func{m}, nil)
-	resetIface.(*types.Interface).Complete()
+// ensureResetIface инициализирует resetIface при первом вызове (интерфейс с методом Reset).
+func ensureResetIface() {
+	resetOnce.Do(func() {
+		sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+		m := types.NewFunc(token.NoPos, nil, "Reset", sig)
+		resetIface = types.NewInterfaceType([]*types.Func{m}, nil)
+		resetIface.Complete()
+	})
 }
 
+// hasResetMethod проверяет, реализует ли тип или указатель на тип интерфейс с методом Reset.
 func hasResetMethod(typ types.Type) bool {
-	return types.Implements(typ, resetIface.(*types.Interface)) ||
-		types.Implements(types.NewPointer(typ), resetIface.(*types.Interface))
+	ensureResetIface()
+	return types.Implements(typ, resetIface) ||
+		types.Implements(types.NewPointer(typ), resetIface)
 }
 
 func as[T any](v any) (T, bool) {

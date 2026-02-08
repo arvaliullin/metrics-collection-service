@@ -1,8 +1,17 @@
 .PHONY: build
 build:
 	mkdir -p bin
-	go build -o bin/agent github.com/arvaliullin/metrics-collection-service/cmd/agent
-	go build -o bin/server github.com/arvaliullin/metrics-collection-service/cmd/server
+	BUILD_DATE=$$(date -u +%Y-%m-%d); BUILD_COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo "N/A"); \
+	go build -ldflags "-X main.buildVersion=v0.0.1 -X main.buildDate=$$BUILD_DATE -X main.buildCommit=$$BUILD_COMMIT" -o bin/agent github.com/arvaliullin/metrics-collection-service/cmd/agent; \
+	go build -ldflags "-X main.buildVersion=v0.0.1 -X main.buildDate=$$BUILD_DATE -X main.buildCommit=$$BUILD_COMMIT" -o bin/server github.com/arvaliullin/metrics-collection-service/cmd/server
+
+.PHONY: staticlint
+staticlint:
+	mkdir -p bin && go build -o bin/staticlint ./cmd/staticlint && go vet -vettool=./bin/staticlint ./...
+
+.PHONY: generate-reset
+generate-reset:
+	go run ./cmd/reset .
 
 .PHONY: run
 run:
@@ -50,6 +59,8 @@ install-deps:
 	- go install github.com/pressly/goose/v3/cmd/goose@latest
 	- go install github.com/swaggo/swag/cmd/swag@latest
 	- go install -v golang.org/x/tools/cmd/godoc@latest
+	- go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+	- go install honnef.co/go/tools/cmd/staticcheck@latest
 
 .PHONY: generate-mocks
 generate-mocks:

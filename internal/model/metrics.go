@@ -18,6 +18,7 @@ type Metrics struct {
 	Hash  string   `json:"hash,omitempty"`
 }
 
+// generate:reset
 // MetricsBatch представляет пакет метрик.
 type MetricsBatch struct {
 	Metrics []Metrics

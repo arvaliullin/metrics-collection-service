@@ -65,6 +65,19 @@ func (s *AgentService) StartReporting(ctx context.Context) error {
 	}()
 
 	<-ctx.Done()
+
+	flushCtx, flushCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer flushCancel()
+	metrics, err := s.reporter.BuildBatch(flushCtx)
+	if err == nil && len(metrics) > 0 {
+		if reportErr := s.reporter.ReportBatch(flushCtx, metrics); reportErr != nil {
+			s.logger.Error().
+				Err(reportErr).
+				Int("metrics_count", len(metrics)).
+				Msg("failed to report final metrics batch on shutdown")
+		}
+	}
+
 	close(jobs)
 	wg.Wait()
 

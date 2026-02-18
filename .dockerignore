@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE and editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Environment and secrets
+.env
+.env.*
+keys/
+
+# Build artifacts and binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+vendor/
+coverage.out
+coverage.html
+
+.devcontainer
+.github
+docker-compose.yaml
+docker-compose*.yml
+Makefile
+
+*.md

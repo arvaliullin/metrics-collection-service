@@ -13,6 +13,12 @@ staticlint:
 generate-reset:
 	go run ./cmd/reset .
 
+.PHONY: generate-crypto-keys
+generate-crypto-keys:
+	mkdir -p keys
+	openssl genrsa -out keys/private.pem 2048
+	openssl rsa -in keys/private.pem -pubout -out keys/public.pem
+
 .PHONY: run
 run:
 	- go run github.com/arvaliullin/metrics-collection-service/cmd/server
@@ -61,6 +67,7 @@ install-deps:
 	- go install -v golang.org/x/tools/cmd/godoc@latest
 	- go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 	- go install honnef.co/go/tools/cmd/staticcheck@latest
+	- go install github.com/divan/expvarmon@latest
 
 .PHONY: generate-mocks
 generate-mocks:

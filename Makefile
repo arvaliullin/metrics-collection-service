@@ -21,7 +21,15 @@ generate-crypto-keys:
 
 .PHONY: run
 run:
-	- go run github.com/arvaliullin/metrics-collection-service/cmd/server
+	go run github.com/arvaliullin/metrics-collection-service/cmd/server -c configs/server.json
+
+.PHONY: run-agent
+run-agent:
+	go run github.com/arvaliullin/metrics-collection-service/cmd/agent -c configs/agent.json
+
+.PHONY: postgres
+postgres:
+	docker compose up postgres -d
 
 .PHONY: test
 test:

@@ -60,6 +60,7 @@ func New(ctx context.Context) *ServerApp {
 		Bool("restore", cfg.Restore).
 		Str("db_dsn", cfg.DatabaseConfig.Dsn).
 		Str("key", cfg.Key).
+		Str("crypto_key", cfg.CryptoKey).
 		Msg("server configuration loaded")
 
 	storage, err := NewStorage(ctx, cfg, logger)
@@ -103,6 +104,7 @@ func (a *ServerApp) Logger() *zerolog.Logger {
 func (a *ServerApp) setupRouter() {
 	router := chi.NewRouter()
 	router.Use(middleware.HashValidationMiddleware(a.Cfg.Key, a.logger))
+	router.Use(middleware.DecryptMiddleware(a.Cfg.CryptoKey, a.logger))
 	router.Use(middleware.GzipDecompressMiddleware())
 	router.Use(middleware.HashResponseMiddleware(a.Cfg.Key, a.logger))
 	router.Use(middleware.GzipCompressMiddleware())

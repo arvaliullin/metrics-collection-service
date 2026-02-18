@@ -43,7 +43,7 @@ func TestHTTPMetricsSender_Send_Success(t *testing.T) {
 		StatusCode().
 		Return(http.StatusOK)
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "", "")
 
 	err := sender.Send(context.Background(), metrics)
 	if err != nil {
@@ -75,7 +75,7 @@ func TestHTTPMetricsSender_Send_WithHash(t *testing.T) {
 		StatusCode().
 		Return(http.StatusOK)
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "test-key")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "test-key", "")
 
 	err := sender.Send(context.Background(), metrics)
 	if err != nil {
@@ -103,7 +103,7 @@ func TestHTTPMetricsSender_Send_NonOKStatus(t *testing.T) {
 		Return(http.StatusInternalServerError).
 		AnyTimes()
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "", "")
 
 	err := sender.Send(context.Background(), metrics)
 	if err == nil {
@@ -125,7 +125,7 @@ func TestHTTPMetricsSender_Send_HTTPError(t *testing.T) {
 		Post(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil, errors.New("network error"))
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "", "")
 
 	err := sender.Send(context.Background(), metrics)
 	if err == nil {
@@ -139,7 +139,7 @@ func TestHTTPMetricsSender_Send_EmptyMetrics(t *testing.T) {
 
 	mockHTTPClient := agenthttpmock.NewMockHTTPClient(ctrl)
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "", "")
 
 	err := sender.Send(context.Background(), nil)
 	if err != nil {

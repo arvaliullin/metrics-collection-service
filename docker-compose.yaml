@@ -6,12 +6,15 @@ services:
     command: [ "server", "-a", "0.0.0.0:8080" ]
     ports:
       - "8080:8080"
+    volumes:
+      - ./keys:/keys:ro
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DATABASE_DSN: postgres://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable
       KEY: secret-key
+      CRYPTO_KEY: /keys/private.pem
     restart: unless-stopped
     networks:
       - metrics-network
@@ -20,11 +23,14 @@ services:
     build:
       context: .
       dockerfile: build/agent.Dockerfile
-    command: [ "agent", "-a", "http://server:8080", "-r", "10", "-p", "2" ]
+    command: [ "agent", "-a", "http://server:8080", "-r", "3", "-p", "2" ]
+    volumes:
+      - ./keys:/keys:ro
     depends_on:
       - server
     environment:
       KEY: secret-key
+      CRYPTO_KEY: /keys/public.pem
     restart: unless-stopped
     networks:
       - metrics-network

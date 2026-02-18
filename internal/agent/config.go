@@ -15,6 +15,7 @@ type Config struct {
 	ReportInterval int    `envconfig:"REPORT_INTERVAL" default:"10"`
 	Address        string `envconfig:"ADDRESS" default:"localhost:8080"`
 	Key            string `envconfig:"KEY"`
+	CryptoKey      string `envconfig:"CRYPTO_KEY"`
 	RateLimit      int    `envconfig:"RATE_LIMIT" default:"3"`
 }
 
@@ -43,12 +44,14 @@ func loadConfig() *Config {
 	var flagReportInterval int
 	var flagAddress string
 	var flagKey string
+	var flagCryptoKey string
 	var flagRateLimit int
 
 	flag.IntVar(&flagPollInterval, "p", cfg.PollInterval, "частота опроса метрик")
 	flag.IntVar(&flagReportInterval, "r", cfg.ReportInterval, "частота отправки метрик на сервер")
 	flag.StringVar(&flagAddress, "a", cfg.Address, "адрес и порт HTTP-сервера")
 	flag.StringVar(&flagKey, "k", "", "ключ")
+	flag.StringVar(&flagCryptoKey, "crypto-key", "", "путь к файлу с публичным ключом")
 	flag.IntVar(&flagRateLimit, "l", cfg.RateLimit, "максимальное количество одновременных исходящих запросов")
 
 	flag.Parse()
@@ -64,6 +67,10 @@ func loadConfig() *Config {
 		case "k":
 			if cfg.Key == "" {
 				cfg.Key = flagKey
+			}
+		case "crypto-key":
+			if cfg.CryptoKey == "" {
+				cfg.CryptoKey = flagCryptoKey
 			}
 		case "l":
 			cfg.RateLimit = flagRateLimit

@@ -14,6 +14,7 @@ type ServerConfig struct {
 	FileStoragePath string         `envconfig:"FILE_STORAGE_PATH" default:"/tmp/metrics-db.json"`
 	Restore         bool           `envconfig:"RESTORE" default:"false"`
 	Key             string         `envconfig:"KEY"`
+	CryptoKey       string         `envconfig:"CRYPTO_KEY"`
 	DatabaseConfig  PostgresConfig `envconfig:"DATABASE"`
 	AuditFile       string         `envconfig:"AUDIT_FILE"`
 	AuditURL        string         `envconfig:"AUDIT_URL"`
@@ -52,6 +53,9 @@ func LoadConfig() *ServerConfig {
 	var flagAuditURL string
 	flag.StringVar(&flagAuditURL, "audit-url", "", "URL для отправки аудита")
 
+	var flagCryptoKey string
+	flag.StringVar(&flagCryptoKey, "crypto-key", "", "путь к файлу с приватным ключом")
+
 	flag.Parse()
 
 	flag.Visit(func(f *flag.Flag) {
@@ -67,6 +71,10 @@ func LoadConfig() *ServerConfig {
 		case "k":
 			if cfg.Key == "" {
 				cfg.Key = flagKey
+			}
+		case "crypto-key":
+			if cfg.CryptoKey == "" {
+				cfg.CryptoKey = flagCryptoKey
 			}
 		case "r":
 			cfg.Restore = flagRestore

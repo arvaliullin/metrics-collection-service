@@ -26,7 +26,7 @@ func main() {
 	fmt.Fprintf(os.Stdout, "Build date: %s\n", buildDate)
 	fmt.Fprintf(os.Stdout, "Build commit: %s\n", buildCommit)
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
 	app := server.New(ctx)

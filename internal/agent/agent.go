@@ -35,6 +35,7 @@ func New(ctx context.Context) *Agent {
 		Int("report_interval", cfg.ReportInterval).
 		Str("address", cfg.Address).
 		Str("key", cfg.Key).
+		Str("crypto_key", cfg.CryptoKey).
 		Msg("agent configuration loaded")
 
 	restyClient := resty.New()
@@ -46,7 +47,7 @@ func New(ctx context.Context) *Agent {
 
 	metricsStorage := memory.NewRepository()
 	collector := service.NewAgentCollector(metricsStorage)
-	metricsSender := http.NewHTTPMetricsSender(httpClient, cfg.GetAddress(), cfg.Key)
+	metricsSender := http.NewHTTPMetricsSender(httpClient, cfg.GetAddress(), cfg.Key, cfg.CryptoKey)
 	reporter := service.NewAgentReporter(metricsSender, metricsStorage)
 	metricsService := service.NewAgentService(
 		collector,

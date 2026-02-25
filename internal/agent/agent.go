@@ -9,6 +9,7 @@ import (
 	"github.com/arvaliullin/metrics-collection-service/internal/ports"
 	"github.com/arvaliullin/metrics-collection-service/internal/repository/memory"
 	"github.com/arvaliullin/metrics-collection-service/internal/service"
+	"github.com/arvaliullin/metrics-collection-service/internal/utils"
 	retryutil "github.com/arvaliullin/metrics-collection-service/internal/utils/retry"
 	"github.com/go-resty/resty/v2"
 	"github.com/rs/zerolog"
@@ -45,9 +46,16 @@ func New(ctx context.Context) *Agent {
 	)
 	httpClient := httpretry.NewHTTPRetryClient(restyClient, retryStrategy)
 
+	agentIP := ""
+	if ip, err := utils.GetOutboundIP(cfg.GetAddress()); err != nil {
+		logger.Warn().Err(err).Msg("could not determine outbound IP for X-Real-IP header")
+	} else {
+		agentIP = ip
+	}
+
 	metricsStorage := memory.NewRepository()
 	collector := service.NewAgentCollector(metricsStorage)
-	metricsSender := http.NewHTTPMetricsSender(httpClient, cfg.GetAddress(), cfg.Key, cfg.CryptoKey)
+	metricsSender := http.NewHTTPMetricsSender(httpClient, cfg.GetAddress(), cfg.Key, cfg.CryptoKey, agentIP)
 	reporter := service.NewAgentReporter(metricsSender, metricsStorage)
 	metricsService := service.NewAgentService(
 		collector,

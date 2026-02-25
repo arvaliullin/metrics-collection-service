@@ -20,6 +20,7 @@ type ServerConfig struct {
 	DatabaseConfig  PostgresConfig `envconfig:"DATABASE"`
 	AuditFile       string         `envconfig:"AUDIT_FILE"`
 	AuditURL        string         `envconfig:"AUDIT_URL"`
+	TrustedSubnet   string         `envconfig:"TRUSTED_SUBNET"`
 }
 
 type serverFileConfig struct {
@@ -32,6 +33,7 @@ type serverFileConfig struct {
 	Key           string `json:"key"`
 	AuditFile     string `json:"audit_file"`
 	AuditURL      string `json:"audit_url"`
+	TrustedSubnet string `json:"trusted_subnet"`
 }
 
 type serverFlags struct {
@@ -45,6 +47,7 @@ type serverFlags struct {
 	auditFile       string
 	auditURL        string
 	cryptoKey       string
+	trustedSubnet   string
 }
 
 func defineServerFlags() (*flag.FlagSet, *serverFlags) {
@@ -63,6 +66,7 @@ func defineServerFlags() (*flag.FlagSet, *serverFlags) {
 	fs.StringVar(&f.auditFile, "audit-file", "", "путь к файлу для аудита")
 	fs.StringVar(&f.auditURL, "audit-url", "", "URL для отправки аудита")
 	fs.StringVar(&f.cryptoKey, "crypto-key", "", "путь к файлу с приватным ключом")
+	fs.StringVar(&f.trustedSubnet, "t", "", "доверенная подсеть")
 
 	return fs, f
 }
@@ -103,6 +107,9 @@ func applyServerFileConfig(cfg *ServerConfig, path string) {
 	if fileCfg.AuditURL != "" {
 		cfg.AuditURL = fileCfg.AuditURL
 	}
+	if fileCfg.TrustedSubnet != "" {
+		cfg.TrustedSubnet = fileCfg.TrustedSubnet
+	}
 }
 
 func applyServerFlags(cfg *ServerConfig, f *serverFlags, fs *flag.FlagSet) {
@@ -130,6 +137,10 @@ func applyServerFlags(cfg *ServerConfig, f *serverFlags, fs *flag.FlagSet) {
 			cfg.AuditFile = f.auditFile
 		case "audit-url":
 			cfg.AuditURL = f.auditURL
+		case "t":
+			if cfg.TrustedSubnet == "" {
+				cfg.TrustedSubnet = f.trustedSubnet
+			}
 		}
 	})
 }

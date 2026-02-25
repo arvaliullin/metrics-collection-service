@@ -27,18 +27,20 @@ type HTTPMetricsSender struct {
 	baseURL       string
 	key           string
 	cryptoKeyPath string
+	agentIP       string
 	publicKey     *rsa.PublicKey
 	publicKeyErr  error
 	publicKeyOnce sync.Once
 }
 
 // NewHTTPMetricsSender создаёт новый экземпляр HTTPMetricsSender.
-func NewHTTPMetricsSender(httpClient HTTPClient, baseURL, key, cryptoKeyPath string) *HTTPMetricsSender {
+func NewHTTPMetricsSender(httpClient HTTPClient, baseURL, key, cryptoKeyPath, agentIP string) *HTTPMetricsSender {
 	return &HTTPMetricsSender{
 		httpClient:    httpClient,
 		baseURL:       baseURL,
 		key:           key,
 		cryptoKeyPath: cryptoKeyPath,
+		agentIP:       agentIP,
 	}
 }
 
@@ -77,6 +79,9 @@ func (s *HTTPMetricsSender) Send(ctx context.Context, metrics []models.Metrics) 
 			return fmt.Errorf("failed to compute hash: %w", hashErr)
 		}
 		headers["HashSHA256"] = fmt.Sprintf("%x", hash256)
+	}
+	if s.agentIP != "" {
+		headers["X-Real-IP"] = s.agentIP
 	}
 
 	resp, err := s.httpClient.Post(ctx, requestURL, body, headers)

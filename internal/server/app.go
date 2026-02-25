@@ -61,6 +61,7 @@ func New(ctx context.Context) *ServerApp {
 		Str("db_dsn", cfg.DatabaseConfig.Dsn).
 		Str("key", cfg.Key).
 		Str("crypto_key", cfg.CryptoKey).
+		Str("trusted_subnet", cfg.TrustedSubnet).
 		Msg("server configuration loaded")
 
 	storage, err := NewStorage(ctx, cfg, logger)
@@ -103,6 +104,7 @@ func (a *ServerApp) Logger() *zerolog.Logger {
 // setupRouter настраивает HTTP маршруты
 func (a *ServerApp) setupRouter() {
 	router := chi.NewRouter()
+	router.Use(middleware.TrustedSubnetMiddleware(a.Cfg.TrustedSubnet, a.logger))
 	router.Use(middleware.HashValidationMiddleware(a.Cfg.Key, a.logger))
 	router.Use(middleware.DecryptMiddleware(a.Cfg.CryptoKey, a.logger))
 	router.Use(middleware.GzipDecompressMiddleware())

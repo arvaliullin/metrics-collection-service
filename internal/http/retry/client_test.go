@@ -2,6 +2,8 @@ package retry
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -12,6 +14,12 @@ import (
 
 func TestHTTPRetryClient_Post(t *testing.T) {
 	t.Run("retry on network error", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		brokenURL := srv.URL
+		srv.Close()
+
 		client := resty.New()
 		strategy := retryutil.NewStrategy(
 			[]time.Duration{time.Millisecond},
@@ -22,11 +30,10 @@ func TestHTTPRetryClient_Post(t *testing.T) {
 		httpClient := NewHTTPRetryClient(client, strategy)
 
 		ctx := context.Background()
-		url := "http://invalid-url-for-test:8080/test"
 		body := []byte("test body")
 		headers := map[string]string{"Content-Type": "application/json"}
 
-		_, err := httpClient.Post(ctx, url, body, headers)
+		_, err := httpClient.Post(ctx, brokenURL, body, headers)
 
 		if err == nil {
 			t.Errorf("expected error but got none")
@@ -35,11 +42,22 @@ func TestHTTPRetryClient_Post(t *testing.T) {
 }
 
 func TestRestyResponse_StatusCode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer srv.Close()
+
 	client := resty.New()
-	resp, err := client.R().SetDoNotParseResponse(true).Post("http://invalid-url-for-test")
-	if err == nil && resp != nil {
-		restyResp := &restyResponse{resp: resp}
-		restyResp.StatusCode()
+	resp, err := client.R().SetDoNotParseResponse(true).Post(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected post error: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("response is nil")
+	}
+	restyResp := &restyResponse{resp: resp}
+	if code := restyResp.StatusCode(); code != http.StatusCreated {
+		t.Errorf("StatusCode() = %d, want %d", code, http.StatusCreated)
 	}
 }
 

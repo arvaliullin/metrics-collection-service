@@ -2,11 +2,14 @@ package server
 
 import (
 	"context"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 
+	pb "github.com/arvaliullin/metrics-collection-service/api/pb/gen"
 	"github.com/arvaliullin/metrics-collection-service/internal/config"
+	grpcserver "github.com/arvaliullin/metrics-collection-service/internal/grpc"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/get"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/html"
 	"github.com/arvaliullin/metrics-collection-service/internal/handler/ping"
@@ -18,6 +21,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"google.golang.org/grpc"
 
 	_ "github.com/arvaliullin/metrics-collection-service/docs"
 )
@@ -38,6 +42,7 @@ type ServerApp struct {
 	Cfg          *config.ServerConfig
 	handlers     *handlers
 	server       *http.Server
+	grpcServer   *grpc.Server
 	storage      repository.MetricStorage
 	logger       zerolog.Logger
 	auditService *service.AuditService
@@ -55,6 +60,7 @@ func New(ctx context.Context) *ServerApp {
 
 	logger.Info().
 		Str("address", cfg.Address).
+		Str("grpc_address", cfg.GRPCAddress).
 		Int("store_interval", cfg.StoreInterval).
 		Str("file_storage_path", cfg.FileStoragePath).
 		Bool("restore", cfg.Restore).
@@ -75,11 +81,20 @@ func New(ctx context.Context) *ServerApp {
 
 	metricsService := service.NewServerMetricsService(storage, logger)
 
+	var gs *grpc.Server
+	if cfg.GRPCAddress != "" {
+		gs = grpc.NewServer(
+			grpc.UnaryInterceptor(grpcserver.TrustedSubnetInterceptor(cfg.TrustedSubnet, logger)),
+		)
+		pb.RegisterMetricsServer(gs, grpcserver.NewMetricsServer(metricsService, logger))
+	}
+
 	app := &ServerApp{
 		Cfg:          cfg,
 		storage:      storage,
 		logger:       logger,
 		auditService: auditService,
+		grpcServer:   gs,
 		handlers: &handlers{
 			update:     update.NewUpdateHandler(metricsService, auditService),
 			updateJSON: update.NewUpdateJSONHandler(metricsService, auditService),
@@ -132,24 +147,43 @@ func (a *ServerApp) setupRouter() {
 	}
 }
 
-// Run запускает сервер
+// Run запускает HTTP и (при наличии конфигурации) gRPC серверы.
 func (a *ServerApp) Run(ctx context.Context) error {
 	go func() {
 		a.logger.Info().
 			Str("address", a.server.Addr).
-			Msg("starting server")
+			Msg("starting HTTP server")
 		if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			a.logger.Error().
 				Err(err).
-				Msg("server error")
+				Msg("HTTP server error")
 		}
 	}()
 
+	if a.grpcServer != nil {
+		lis, err := net.Listen("tcp", a.Cfg.GRPCAddress)
+		if err != nil {
+			return err
+		}
+		go func() {
+			a.logger.Info().
+				Str("address", a.Cfg.GRPCAddress).
+				Msg("starting gRPC server")
+			if err := a.grpcServer.Serve(lis); err != nil {
+				a.logger.Error().Err(err).Msg("gRPC server error")
+			}
+		}()
+	}
+
 	<-ctx.Done()
-	a.logger.Info().Msg("shutting down server")
+	a.logger.Info().Msg("shutting down servers")
+
+	if a.grpcServer != nil {
+		a.grpcServer.GracefulStop()
+	}
 
 	if err := a.server.Shutdown(context.TODO()); err != nil {
-		a.logger.Error().Err(err).Msg("error shutting down server")
+		a.logger.Error().Err(err).Msg("error shutting down HTTP server")
 	}
 
 	if err := a.storage.Close(); err != nil {

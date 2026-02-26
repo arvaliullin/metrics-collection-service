@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	grpcclient "github.com/arvaliullin/metrics-collection-service/internal/grpc"
 	http "github.com/arvaliullin/metrics-collection-service/internal/http"
 	httpretry "github.com/arvaliullin/metrics-collection-service/internal/http/retry"
 	"github.com/arvaliullin/metrics-collection-service/internal/ports"
@@ -35,30 +36,45 @@ func New(ctx context.Context) *Agent {
 		Int("poll_interval", cfg.PollInterval).
 		Int("report_interval", cfg.ReportInterval).
 		Str("address", cfg.Address).
+		Str("grpc_address", cfg.GRPCAddress).
 		Str("key", cfg.Key).
 		Str("crypto_key", cfg.CryptoKey).
 		Msg("agent configuration loaded")
 
-	restyClient := resty.New()
-	retryStrategy := retryutil.NewStrategy(
-		retryutil.DefaultDelays,
-		http.NetworkRetryPredicate,
-	)
-	httpClient := httpretry.NewHTTPRetryClient(restyClient, retryStrategy)
-
 	agentIP := ""
-	if ip, err := utils.GetOutboundIP(cfg.GetAddress()); err != nil {
-		logger.Warn().Err(err).Msg("could not determine outbound IP for X-Real-IP header")
+	resolveAddr := cfg.GetAddress()
+	if cfg.GRPCAddress != "" {
+		resolveAddr = cfg.GRPCAddress
+	}
+	if ip, err := utils.GetOutboundIP(resolveAddr); err != nil {
+		logger.Warn().Err(err).Msg("could not determine outbound IP")
 	} else {
 		agentIP = ip
 	}
 
 	metricsStorage := memory.NewRepository()
 	collector := service.NewAgentCollector(metricsStorage)
-	metricsSender := http.NewHTTPMetricsSender(httpClient, cfg.GetAddress(),
-		http.WithKey(cfg.Key),
-		http.WithCryptoKey(cfg.CryptoKey),
-		http.WithAgentIP(agentIP))
+
+	var metricsSender ports.MetricsSender
+	if cfg.GRPCAddress != "" {
+		grpcSender, err := grpcclient.NewGRPCMetricsSender(cfg.GRPCAddress, agentIP)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("failed to create gRPC metrics sender")
+		}
+		metricsSender = grpcSender
+	} else {
+		restyClient := resty.New()
+		retryStrategy := retryutil.NewStrategy(
+			retryutil.DefaultDelays,
+			http.NetworkRetryPredicate,
+		)
+		httpClient := httpretry.NewHTTPRetryClient(restyClient, retryStrategy)
+		metricsSender = http.NewHTTPMetricsSender(httpClient, cfg.GetAddress(),
+			http.WithKey(cfg.Key),
+			http.WithCryptoKey(cfg.CryptoKey),
+			http.WithAgentIP(agentIP))
+	}
+
 	reporter := service.NewAgentReporter(metricsSender, metricsStorage)
 	metricsService := service.NewAgentService(
 		collector,

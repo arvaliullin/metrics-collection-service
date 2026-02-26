@@ -16,6 +16,7 @@ type Config struct {
 	PollInterval   int    `envconfig:"POLL_INTERVAL" default:"2"`
 	ReportInterval int    `envconfig:"REPORT_INTERVAL" default:"10"`
 	Address        string `envconfig:"ADDRESS" default:"localhost:8080"`
+	GRPCAddress    string `envconfig:"GRPC_ADDRESS" default:""`
 	Key            string `envconfig:"KEY"`
 	CryptoKey      string `envconfig:"CRYPTO_KEY"`
 	RateLimit      int    `envconfig:"RATE_LIMIT" default:"3"`
@@ -23,6 +24,7 @@ type Config struct {
 
 type agentFileConfig struct {
 	Address        string `json:"address"`
+	GRPCAddress    string `json:"grpc_address"`
 	ReportInterval string `json:"report_interval"`
 	PollInterval   string `json:"poll_interval"`
 	CryptoKey      string `json:"crypto_key"`
@@ -35,6 +37,7 @@ type agentFlags struct {
 	pollInterval   int
 	reportInterval int
 	address        string
+	grpcAddress    string
 	key            string
 	cryptoKey      string
 	rateLimit      int
@@ -65,6 +68,7 @@ func defineAgentFlags() (*flag.FlagSet, *agentFlags) {
 	fs.IntVar(&f.pollInterval, "p", 0, "частота опроса метрик")
 	fs.IntVar(&f.reportInterval, "r", 0, "частота отправки метрик на сервер")
 	fs.StringVar(&f.address, "a", "", "адрес и порт HTTP-сервера")
+	fs.StringVar(&f.grpcAddress, "grpc-address", "", "адрес и порт gRPC-сервера")
 	fs.StringVar(&f.key, "k", "", "ключ")
 	fs.StringVar(&f.cryptoKey, "crypto-key", "", "путь к файлу с публичным ключом")
 	fs.IntVar(&f.rateLimit, "l", 0, "максимальное количество одновременных исходящих запросов")
@@ -80,6 +84,9 @@ func applyAgentFileConfig(cfg *Config, path string) {
 	}
 	if fileCfg.Address != "" {
 		cfg.Address = fileCfg.Address
+	}
+	if fileCfg.GRPCAddress != "" {
+		cfg.GRPCAddress = fileCfg.GRPCAddress
 	}
 	if fileCfg.ReportInterval != "" {
 		d, err := time.ParseDuration(fileCfg.ReportInterval)
@@ -117,6 +124,10 @@ func applyAgentFlags(cfg *Config, f *agentFlags, fs *flag.FlagSet) {
 			cfg.ReportInterval = f.reportInterval
 		case "a":
 			cfg.Address = f.address
+		case "grpc-address":
+			if cfg.GRPCAddress == "" {
+				cfg.GRPCAddress = f.grpcAddress
+			}
 		case "k":
 			if cfg.Key == "" {
 				cfg.Key = f.key

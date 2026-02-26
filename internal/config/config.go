@@ -12,6 +12,7 @@ import (
 // ServerConfig содержит конфигурацию сервера.
 type ServerConfig struct {
 	Address         string         `envconfig:"ADDRESS" default:"localhost:8080"`
+	GRPCAddress     string         `envconfig:"GRPC_ADDRESS" default:""`
 	StoreInterval   int            `envconfig:"STORE_INTERVAL" default:"300"`
 	FileStoragePath string         `envconfig:"FILE_STORAGE_PATH" default:"/tmp/metrics-db.json"`
 	Restore         bool           `envconfig:"RESTORE" default:"false"`
@@ -25,6 +26,7 @@ type ServerConfig struct {
 
 type serverFileConfig struct {
 	Address       string `json:"address"`
+	GRPCAddress   string `json:"grpc_address"`
 	Restore       bool   `json:"restore"`
 	StoreInterval string `json:"store_interval"`
 	StoreFile     string `json:"store_file"`
@@ -39,6 +41,7 @@ type serverFileConfig struct {
 type serverFlags struct {
 	configPath      string
 	address         string
+	grpcAddress     string
 	storeInterval   int
 	fileStoragePath string
 	restore         bool
@@ -58,6 +61,7 @@ func defineServerFlags() (*flag.FlagSet, *serverFlags) {
 	fs.StringVar(&f.configPath, "c", f.configPath, "путь к файлу конфигурации")
 	fs.StringVar(&f.configPath, "config", f.configPath, "путь к файлу конфигурации")
 	fs.StringVar(&f.address, "a", "", "адрес и порт HTTP-сервера")
+	fs.StringVar(&f.grpcAddress, "grpc-address", "", "адрес и порт gRPC-сервера")
 	fs.IntVar(&f.storeInterval, "i", -1, "интервал сохранения в секундах")
 	fs.StringVar(&f.fileStoragePath, "f", "", "путь к файлу хранилища")
 	fs.BoolVar(&f.restore, "r", false, "загружать данные из файла при старте")
@@ -79,6 +83,9 @@ func applyServerFileConfig(cfg *ServerConfig, path string) {
 	}
 	if fileCfg.Address != "" {
 		cfg.Address = fileCfg.Address
+	}
+	if fileCfg.GRPCAddress != "" {
+		cfg.GRPCAddress = fileCfg.GRPCAddress
 	}
 	cfg.Restore = fileCfg.Restore
 	if fileCfg.StoreInterval != "" {
@@ -117,6 +124,10 @@ func applyServerFlags(cfg *ServerConfig, f *serverFlags, fs *flag.FlagSet) {
 		switch fl.Name {
 		case "a":
 			cfg.Address = f.address
+		case "grpc-address":
+			if cfg.GRPCAddress == "" {
+				cfg.GRPCAddress = f.grpcAddress
+			}
 		case "i":
 			cfg.StoreInterval = f.storeInterval
 		case "f":

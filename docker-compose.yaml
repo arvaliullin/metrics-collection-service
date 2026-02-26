@@ -3,15 +3,17 @@ services:
     build:
       context: .
       dockerfile: build/server.Dockerfile
-    command: [ "server", "-a", "0.0.0.0:8080" ]
     ports:
       - "8080:8080"
+      - "3200:3200"
     volumes:
       - ./keys:/keys:ro
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      ADDRESS: "0.0.0.0:8080"
+      GRPC_ADDRESS: ":3200"
       DATABASE_DSN: postgres://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable
       KEY: secret-key
       CRYPTO_KEY: /keys/private.pem
@@ -23,12 +25,15 @@ services:
     build:
       context: .
       dockerfile: build/agent.Dockerfile
-    command: [ "agent", "-a", "http://server:8080", "-r", "3", "-p", "2" ]
     volumes:
       - ./keys:/keys:ro
     depends_on:
       - server
     environment:
+      ADDRESS: http://server:8080
+      GRPC_ADDRESS: server:3200
+      POLL_INTERVAL: 2
+      REPORT_INTERVAL: 3
       KEY: secret-key
       CRYPTO_KEY: /keys/public.pem
     restart: unless-stopped

@@ -1,5 +1,6 @@
 {
   "address": "http://localhost:8080",
+  "grpc_address": "localhost:3200",
   "report_interval": "3s",
   "poll_interval": "2s",
   "crypto_key": "keys/public.pem"

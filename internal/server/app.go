@@ -46,6 +46,7 @@ type ServerApp struct {
 	storage      repository.MetricStorage
 	logger       zerolog.Logger
 	auditService *service.AuditService
+	trustedNet   *net.IPNet
 }
 
 // New создает новый экземпляр ServerApp с инициализированными зависимостями
@@ -70,6 +71,15 @@ func New(ctx context.Context) *ServerApp {
 		Str("trusted_subnet", cfg.TrustedSubnet).
 		Msg("server configuration loaded")
 
+	var trustedNet *net.IPNet
+	if cfg.TrustedSubnet != "" {
+		_, parsedNet, parseErr := net.ParseCIDR(cfg.TrustedSubnet)
+		if parseErr != nil {
+			logger.Fatal().Err(parseErr).Str("trusted_subnet", cfg.TrustedSubnet).Msg("invalid trusted subnet CIDR")
+		}
+		trustedNet = parsedNet
+	}
+
 	storage, err := NewStorage(ctx, cfg, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to initialize storage")
@@ -84,7 +94,7 @@ func New(ctx context.Context) *ServerApp {
 	var gs *grpc.Server
 	if cfg.GRPCAddress != "" {
 		gs = grpc.NewServer(
-			grpc.UnaryInterceptor(grpcserver.TrustedSubnetInterceptor(cfg.TrustedSubnet, logger)),
+			grpc.UnaryInterceptor(grpcserver.TrustedSubnetInterceptor(trustedNet, logger)),
 		)
 		pb.RegisterMetricsServer(gs, grpcserver.NewMetricsServer(metricsService, logger))
 	}
@@ -95,6 +105,7 @@ func New(ctx context.Context) *ServerApp {
 		logger:       logger,
 		auditService: auditService,
 		grpcServer:   gs,
+		trustedNet:   trustedNet,
 		handlers: &handlers{
 			update:     update.NewUpdateHandler(metricsService, auditService),
 			updateJSON: update.NewUpdateJSONHandler(metricsService, auditService),
@@ -119,7 +130,7 @@ func (a *ServerApp) Logger() *zerolog.Logger {
 // setupRouter настраивает HTTP маршруты
 func (a *ServerApp) setupRouter() {
 	router := chi.NewRouter()
-	router.Use(middleware.TrustedSubnetMiddleware(a.Cfg.TrustedSubnet, a.logger))
+	router.Use(middleware.TrustedSubnetMiddleware(a.trustedNet, a.logger))
 	router.Use(middleware.HashValidationMiddleware(a.Cfg.Key, a.logger))
 	router.Use(middleware.DecryptMiddleware(a.Cfg.CryptoKey, a.logger))
 	router.Use(middleware.GzipDecompressMiddleware())

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -88,19 +89,19 @@ func TestTrustedSubnetMiddleware(t *testing.T) {
 			xRealIP:        "127.0.0.1",
 			expectedStatus: http.StatusOK,
 		},
-		{
-			name:           "invalid CIDR returns 500",
-			trustedSubnet:  "not-a-cidr",
-			method:         http.MethodPost,
-			path:           "/updates",
-			xRealIP:        "192.168.1.1",
-			expectedStatus: http.StatusInternalServerError,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mw := TrustedSubnetMiddleware(tt.trustedSubnet, logger)
+			var trustedNet *net.IPNet
+			if tt.trustedSubnet != "" {
+				_, parsed, err := net.ParseCIDR(tt.trustedSubnet)
+				if err != nil {
+					t.Fatalf("invalid test CIDR %q: %v", tt.trustedSubnet, err)
+				}
+				trustedNet = parsed
+			}
+			mw := TrustedSubnetMiddleware(trustedNet, logger)
 			wrapped := mw(handler)
 
 			req := httptest.NewRequest(tt.method, tt.path, nil)

@@ -12,9 +12,9 @@ import (
 )
 
 // TrustedSubnetInterceptor возвращает UnaryServerInterceptor, проверяющий принадлежность IP агента доверенной подсети.
-func TrustedSubnetInterceptor(trustedSubnet string, logger zerolog.Logger) grpc.UnaryServerInterceptor {
+func TrustedSubnetInterceptor(trustedNet *net.IPNet, logger zerolog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		if trustedSubnet == "" {
+		if trustedNet == nil {
 			return handler(ctx, req)
 		}
 
@@ -36,14 +36,8 @@ func TrustedSubnetInterceptor(trustedSubnet string, logger zerolog.Logger) grpc.
 			return nil, status.Error(codes.PermissionDenied, "invalid x-real-ip")
 		}
 
-		_, ipNet, err := net.ParseCIDR(trustedSubnet)
-		if err != nil {
-			logger.Error().Err(err).Str("trusted_subnet", trustedSubnet).Msg("grpc: invalid trusted subnet CIDR")
-			return nil, status.Error(codes.Internal, "invalid trusted subnet configuration")
-		}
-
-		if !ipNet.Contains(clientIP) {
-			logger.Warn().Str("ip", values[0]).Str("trusted_subnet", trustedSubnet).Msg("grpc: IP not in trusted subnet")
+		if !trustedNet.Contains(clientIP) {
+			logger.Warn().Str("ip", values[0]).Str("trusted_subnet", trustedNet.String()).Msg("grpc: IP not in trusted subnet")
 			return nil, status.Error(codes.PermissionDenied, "IP not in trusted subnet")
 		}
 

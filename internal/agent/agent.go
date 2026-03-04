@@ -20,6 +20,7 @@ import (
 type Agent struct {
 	metricsService ports.MetricsService
 	logger         zerolog.Logger
+	closer         func() error
 }
 
 // New создаёт новый экземпляр Agent с инициализированными зависимостями.
@@ -56,12 +57,14 @@ func New(ctx context.Context) *Agent {
 	collector := service.NewAgentCollector(metricsStorage)
 
 	var metricsSender ports.MetricsSender
+	var closer func() error
 	if cfg.GRPCAddress != "" {
 		grpcSender, err := grpcclient.NewGRPCMetricsSender(cfg.GRPCAddress, agentIP)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("failed to create gRPC metrics sender")
 		}
 		metricsSender = grpcSender
+		closer = grpcSender.Close
 	} else {
 		restyClient := resty.New()
 		retryStrategy := retryutil.NewStrategy(
@@ -88,6 +91,7 @@ func New(ctx context.Context) *Agent {
 	return &Agent{
 		metricsService: metricsService,
 		logger:         logger,
+		closer:         closer,
 	}
 }
 

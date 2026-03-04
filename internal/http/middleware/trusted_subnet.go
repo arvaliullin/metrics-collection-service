@@ -9,10 +9,10 @@ import (
 )
 
 // TrustedSubnetMiddleware проверяет, что IP из заголовка X-Real-IP входит в доверенную подсеть.
-func TrustedSubnetMiddleware(trustedSubnet string, logger zerolog.Logger) func(http.Handler) http.Handler {
+func TrustedSubnetMiddleware(trustedNet *net.IPNet, logger zerolog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if trustedSubnet == "" {
+			if trustedNet == nil {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -32,14 +32,8 @@ func TrustedSubnetMiddleware(trustedSubnet string, logger zerolog.Logger) func(h
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
-			_, ipNet, err := net.ParseCIDR(trustedSubnet)
-			if err != nil {
-				logger.Error().Err(err).Str("trusted_subnet", trustedSubnet).Msg("invalid trusted subnet CIDR")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			if !ipNet.Contains(ip) {
-				logger.Warn().Str("ip", clientIPStr).Str("trusted_subnet", trustedSubnet).Msg("IP not in trusted subnet")
+			if !trustedNet.Contains(ip) {
+				logger.Warn().Str("ip", clientIPStr).Str("trusted_subnet", trustedNet.String()).Msg("IP not in trusted subnet")
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}

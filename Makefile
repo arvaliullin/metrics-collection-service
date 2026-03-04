@@ -67,6 +67,18 @@ bench-profile-view:
 	fi
 	go tool pprof -http=":9090" -diff_base=bin/profiles/base.pprof bin/profiles/result.pprof
 
+.PHONY: generate-proto
+generate-proto:
+	mkdir -p api/pb/gen
+	protoc \
+		--proto_path=api/pb \
+		--go_out=api/pb/gen \
+		--go_opt=paths=source_relative \
+		--go_opt=default_api_level=API_OPAQUE \
+		--go-grpc_out=api/pb/gen \
+		--go-grpc_opt=paths=source_relative \
+		api/pb/*.proto
+
 .PHONY: install-deps
 install-deps:
 	- go install go.uber.org/mock/mockgen@latest
@@ -76,6 +88,8 @@ install-deps:
 	- go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 	- go install honnef.co/go/tools/cmd/staticcheck@latest
 	- go install github.com/divan/expvarmon@latest
+	- go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	- go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 .PHONY: generate-mocks
 generate-mocks:

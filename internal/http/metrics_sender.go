@@ -27,19 +27,40 @@ type HTTPMetricsSender struct {
 	baseURL       string
 	key           string
 	cryptoKeyPath string
+	agentIP       string
 	publicKey     *rsa.PublicKey
 	publicKeyErr  error
 	publicKeyOnce sync.Once
 }
 
+// Option задаёт опцию для NewHTTPMetricsSender.
+type Option func(*HTTPMetricsSender)
+
+// WithKey задаёт ключ для подписи запросов.
+func WithKey(key string) Option {
+	return func(s *HTTPMetricsSender) { s.key = key }
+}
+
+// WithCryptoKey задаёт путь к файлу с публичным ключом для шифрования.
+func WithCryptoKey(path string) Option {
+	return func(s *HTTPMetricsSender) { s.cryptoKeyPath = path }
+}
+
+// WithAgentIP задаёт IP агента для заголовка X-Real-IP.
+func WithAgentIP(ip string) Option {
+	return func(s *HTTPMetricsSender) { s.agentIP = ip }
+}
+
 // NewHTTPMetricsSender создаёт новый экземпляр HTTPMetricsSender.
-func NewHTTPMetricsSender(httpClient HTTPClient, baseURL, key, cryptoKeyPath string) *HTTPMetricsSender {
-	return &HTTPMetricsSender{
-		httpClient:    httpClient,
-		baseURL:       baseURL,
-		key:           key,
-		cryptoKeyPath: cryptoKeyPath,
+func NewHTTPMetricsSender(httpClient HTTPClient, baseURL string, opts ...Option) *HTTPMetricsSender {
+	s := &HTTPMetricsSender{
+		httpClient: httpClient,
+		baseURL:    baseURL,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // Send отправляет метрики на сервер через HTTP.
@@ -77,6 +98,9 @@ func (s *HTTPMetricsSender) Send(ctx context.Context, metrics []models.Metrics) 
 			return fmt.Errorf("failed to compute hash: %w", hashErr)
 		}
 		headers["HashSHA256"] = fmt.Sprintf("%x", hash256)
+	}
+	if s.agentIP != "" {
+		headers["X-Real-IP"] = s.agentIP
 	}
 
 	resp, err := s.httpClient.Post(ctx, requestURL, body, headers)

@@ -1,8 +1,10 @@
 {
   "address": "localhost:8080",
+  "grpc_address": "localhost:3200",
   "restore": false,
   "store_interval": "300s",
   "store_file": "/tmp/metrics-db.json",
   "database_dsn": "postgres://postgres_user:postgres_password@localhost:5432/postgres_db?sslmode=disable",
-  "crypto_key": "keys/private.pem"
+  "crypto_key": "keys/private.pem",
+  "trusted_subnet": ""
 }

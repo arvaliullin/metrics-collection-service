@@ -43,7 +43,7 @@ func TestHTTPMetricsSender_Send_Success(t *testing.T) {
 		StatusCode().
 		Return(http.StatusOK)
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080")
 
 	err := sender.Send(context.Background(), metrics)
 	if err != nil {
@@ -75,7 +75,7 @@ func TestHTTPMetricsSender_Send_WithHash(t *testing.T) {
 		StatusCode().
 		Return(http.StatusOK)
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "test-key", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", agenthttp.WithKey("test-key"))
 
 	err := sender.Send(context.Background(), metrics)
 	if err != nil {
@@ -103,7 +103,7 @@ func TestHTTPMetricsSender_Send_NonOKStatus(t *testing.T) {
 		Return(http.StatusInternalServerError).
 		AnyTimes()
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080")
 
 	err := sender.Send(context.Background(), metrics)
 	if err == nil {
@@ -125,7 +125,7 @@ func TestHTTPMetricsSender_Send_HTTPError(t *testing.T) {
 		Post(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil, errors.New("network error"))
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080")
 
 	err := sender.Send(context.Background(), metrics)
 	if err == nil {
@@ -139,9 +139,41 @@ func TestHTTPMetricsSender_Send_EmptyMetrics(t *testing.T) {
 
 	mockHTTPClient := agenthttpmock.NewMockHTTPClient(ctrl)
 
-	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", "", "")
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080")
 
 	err := sender.Send(context.Background(), nil)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestHTTPMetricsSender_Send_WithXRealIP(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockHTTPClient := agenthttpmock.NewMockHTTPClient(ctrl)
+	mockResponse := agenthttpmock.NewMockResponse(ctrl)
+
+	metrics := []models.Metrics{
+		{ID: "gauge1", MType: models.Gauge, Value: floatPtr(1.0)},
+	}
+
+	mockHTTPClient.EXPECT().
+		Post(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, url string, body []byte, headers map[string]string) (agenthttp.Response, error) {
+			if headers["X-Real-IP"] != "192.168.1.100" {
+				t.Errorf("expected X-Real-IP header 192.168.1.100, got %q", headers["X-Real-IP"])
+			}
+			return mockResponse, nil
+		})
+
+	mockResponse.EXPECT().
+		StatusCode().
+		Return(http.StatusOK)
+
+	sender := agenthttp.NewHTTPMetricsSender(mockHTTPClient, "http://localhost:8080", agenthttp.WithAgentIP("192.168.1.100"))
+
+	err := sender.Send(context.Background(), metrics)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

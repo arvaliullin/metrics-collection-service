@@ -12,6 +12,7 @@ import (
 // ServerConfig содержит конфигурацию сервера.
 type ServerConfig struct {
 	Address         string         `envconfig:"ADDRESS" default:"localhost:8080"`
+	GRPCAddress     string         `envconfig:"GRPC_ADDRESS" default:""`
 	StoreInterval   int            `envconfig:"STORE_INTERVAL" default:"300"`
 	FileStoragePath string         `envconfig:"FILE_STORAGE_PATH" default:"/tmp/metrics-db.json"`
 	Restore         bool           `envconfig:"RESTORE" default:"false"`
@@ -20,10 +21,12 @@ type ServerConfig struct {
 	DatabaseConfig  PostgresConfig `envconfig:"DATABASE"`
 	AuditFile       string         `envconfig:"AUDIT_FILE"`
 	AuditURL        string         `envconfig:"AUDIT_URL"`
+	TrustedSubnet   string         `envconfig:"TRUSTED_SUBNET"`
 }
 
 type serverFileConfig struct {
 	Address       string `json:"address"`
+	GRPCAddress   string `json:"grpc_address"`
 	Restore       bool   `json:"restore"`
 	StoreInterval string `json:"store_interval"`
 	StoreFile     string `json:"store_file"`
@@ -32,11 +35,13 @@ type serverFileConfig struct {
 	Key           string `json:"key"`
 	AuditFile     string `json:"audit_file"`
 	AuditURL      string `json:"audit_url"`
+	TrustedSubnet string `json:"trusted_subnet"`
 }
 
 type serverFlags struct {
 	configPath      string
 	address         string
+	grpcAddress     string
 	storeInterval   int
 	fileStoragePath string
 	restore         bool
@@ -45,6 +50,7 @@ type serverFlags struct {
 	auditFile       string
 	auditURL        string
 	cryptoKey       string
+	trustedSubnet   string
 }
 
 func defineServerFlags() (*flag.FlagSet, *serverFlags) {
@@ -55,6 +61,7 @@ func defineServerFlags() (*flag.FlagSet, *serverFlags) {
 	fs.StringVar(&f.configPath, "c", f.configPath, "путь к файлу конфигурации")
 	fs.StringVar(&f.configPath, "config", f.configPath, "путь к файлу конфигурации")
 	fs.StringVar(&f.address, "a", "", "адрес и порт HTTP-сервера")
+	fs.StringVar(&f.grpcAddress, "grpc-address", "", "адрес и порт gRPC-сервера")
 	fs.IntVar(&f.storeInterval, "i", -1, "интервал сохранения в секундах")
 	fs.StringVar(&f.fileStoragePath, "f", "", "путь к файлу хранилища")
 	fs.BoolVar(&f.restore, "r", false, "загружать данные из файла при старте")
@@ -63,6 +70,7 @@ func defineServerFlags() (*flag.FlagSet, *serverFlags) {
 	fs.StringVar(&f.auditFile, "audit-file", "", "путь к файлу для аудита")
 	fs.StringVar(&f.auditURL, "audit-url", "", "URL для отправки аудита")
 	fs.StringVar(&f.cryptoKey, "crypto-key", "", "путь к файлу с приватным ключом")
+	fs.StringVar(&f.trustedSubnet, "t", "", "доверенная подсеть")
 
 	return fs, f
 }
@@ -75,6 +83,9 @@ func applyServerFileConfig(cfg *ServerConfig, path string) {
 	}
 	if fileCfg.Address != "" {
 		cfg.Address = fileCfg.Address
+	}
+	if fileCfg.GRPCAddress != "" {
+		cfg.GRPCAddress = fileCfg.GRPCAddress
 	}
 	cfg.Restore = fileCfg.Restore
 	if fileCfg.StoreInterval != "" {
@@ -103,6 +114,9 @@ func applyServerFileConfig(cfg *ServerConfig, path string) {
 	if fileCfg.AuditURL != "" {
 		cfg.AuditURL = fileCfg.AuditURL
 	}
+	if fileCfg.TrustedSubnet != "" {
+		cfg.TrustedSubnet = fileCfg.TrustedSubnet
+	}
 }
 
 func applyServerFlags(cfg *ServerConfig, f *serverFlags, fs *flag.FlagSet) {
@@ -110,6 +124,10 @@ func applyServerFlags(cfg *ServerConfig, f *serverFlags, fs *flag.FlagSet) {
 		switch fl.Name {
 		case "a":
 			cfg.Address = f.address
+		case "grpc-address":
+			if cfg.GRPCAddress == "" {
+				cfg.GRPCAddress = f.grpcAddress
+			}
 		case "i":
 			cfg.StoreInterval = f.storeInterval
 		case "f":
@@ -130,6 +148,10 @@ func applyServerFlags(cfg *ServerConfig, f *serverFlags, fs *flag.FlagSet) {
 			cfg.AuditFile = f.auditFile
 		case "audit-url":
 			cfg.AuditURL = f.auditURL
+		case "t":
+			if cfg.TrustedSubnet == "" {
+				cfg.TrustedSubnet = f.trustedSubnet
+			}
 		}
 	})
 }
